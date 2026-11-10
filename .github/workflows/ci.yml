@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly: catch base-image + tool-download drift
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build all lab images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build attacker + all targets
+        run: docker compose build
+
+  suid-lab:
+    name: SUID lab — five paths to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the SUID target
+        run: docker compose build target-suid
+
+      - name: Start the SUID target
+        run: docker compose up -d target-suid
+
+      - name: Exploit all five SUID stations and assert root + flag
+        run: |
+          docker cp tests/verify_suid.sh target-suid:/tmp/verify_suid.sh
+          docker exec target-suid chmod 755 /tmp/verify_suid.sh
+          docker exec -u labuser1 target-suid bash /tmp/verify_suid.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
