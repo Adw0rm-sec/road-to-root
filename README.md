@@ -1,0 +1,120 @@
+# Road to Root — Linux Privilege Escalation Labs
+
+> A hands-on, story-driven Linux privilege-escalation range you run on your own
+> machine with Docker. You get a low-privilege foothold on a box; your job is to
+> become **root**. Every lab is a real misconfiguration you'll meet in the wild,
+> planted on purpose, documented end-to-end — from the mistake, to the exploit,
+> to how a blue team would **detect and fix** it.
+
+<p align="center">
+  <i>Learn privesc by doing it, not by reading about it.</i>
+</p>
+
+---
+
+## The story
+
+You're an operator on a red-team engagement for **BlackReef Security**. The
+client — **Hollow Industries**, a logistics and data company — wants to know how
+far an attacker gets *after* the first foothold. Phishing already got you a
+low-privilege SSH account on their internal hosts. That's where you start.
+
+Standing orders for every host in the campaign:
+
+1. **Enumerate** — understand the box you landed on.
+2. **Escalate** — turn `labuser1` into `root`.
+3. **Capture** — read the root-only flag to prove it: `/root/flag.txt`.
+4. **Report** — document the path, how to detect it, and how to fix it.
+
+Each chapter is one compromised host with a different **root cause**. Full
+campaign lore and the chapter roster live in **[docs/CAMPAIGN.md](docs/CAMPAIGN.md)**.
+
+---
+
+## Campaign roster
+
+| # | Chapter | Host (codename) | Root cause | Difficulty | Status |
+|---|---------|-----------------|-----------|:----------:|:------:|
+| 01 | **SUID Bits** | `target-suid` (hollow-fileproc-01) | Misused SUID binaries | ★☆☆☆ → ★★★☆ | ✅ Ready |
+| 02 | Cron Jobs | `target-cron` (hollow-backup-01) | World-writable root cron | ★★☆☆ | 🧪 Draft |
+| 03 | Sudo rules | — | Dangerous `sudoers` entries | ★★☆☆ | ⏳ Planned |
+| 04 | PATH & env | — | Untrusted `$PATH` in root context | ★★☆☆ | ⏳ Planned |
+| 05 | Capabilities | — | `cap_setuid` on a binary | ★★★☆ | ⏳ Planned |
+| 06 | Writable `/etc/passwd` | — | Weak file permissions | ★☆☆☆ | ⏳ Planned |
+| 07 | NFS `no_root_squash` | — | Exported share mounts as root | ★★★☆ | ⏳ Planned |
+| 08 | Docker socket | — | `/var/run/docker.sock` exposed | ★★★☆ | ⏳ Planned |
+
+> We grow this one chapter at a time: build the box → test it locally → confirm
+> it works as intended → publish. SUID is live; the rest land as they're verified.
+
+---
+
+## How the range is built
+
+One **attacker** box plus one vulnerable **target** per attack type, all on a
+shared Docker bridge network (`labnet`) so the attacker can reach targets by name.
+
+```
+road-to-root/
+├── docker-compose.yml      # wires attacker + targets on 'labnet'
+├── attacker/               # your kit: nmap, linpeas, LES, prefetched
+├── targets/
+│   ├── suid/               # CHAPTER 01 — SUID bits (ready)
+│   │   ├── README.md       #   mission brief  (try it yourself)
+│   │   └── WRITEUP.md      #   full walkthrough (spoilers)
+│   └── cron/               # CHAPTER 02 — cron (draft)
+└── docs/
+    ├── CAMPAIGN.md         # the story + roster
+    └── LAB_TEMPLATE.md     # the template every lab follows
+```
+
+## Quick start
+
+```bash
+# Build and start the attacker + the SUID target
+docker compose up -d --build attacker target-suid
+
+# Hop onto your attacker box
+docker exec -it attacker bash
+
+# From the attacker, reach the target by name and log in
+ssh labuser1@target-suid          # password: password123
+```
+
+You're now `labuser1` on the target. Open **[targets/suid/README.md](targets/suid/README.md)**
+and start the mission. Stuck? The full walkthrough is in
+**[targets/suid/WRITEUP.md](targets/suid/WRITEUP.md)**.
+
+Handy shortcuts (see the [Makefile](Makefile)):
+
+```bash
+make up          # build + start attacker and target-suid
+make attacker    # shell into the attacker box
+make reset-suid  # rebuild the SUID target back to pristine-vulnerable
+make down        # tear the range down
+```
+
+---
+
+## ⚠️ Legal & ethics
+
+This range exists **only** to teach defense through hands-on offense. Everything
+here is intentionally vulnerable and meant to run **locally, in throwaway
+containers, on hardware you own**.
+
+- **Do not** expose these containers to the internet or any network you don't control.
+- **Do not** use these techniques on systems you aren't explicitly authorized to test.
+- The exploits are deliberately simplified for learning; real engagements require
+  written authorization and scope.
+
+Unauthorized access to computer systems is a crime. You are responsible for how
+you use this. See [LICENSE](LICENSE).
+
+---
+
+## What can't be done in a container
+
+Containers share the **host kernel**, so true kernel exploits (e.g. Dirty COW,
+Dirty Pipe, `pwnkit`-style ring-0 bugs) can't be practiced safely here — they'd
+need their own kernel. For those, keep a small old-kernel VM. Everything in the
+roster above is user-space misconfiguration and lives happily in Docker.

@@ -1,0 +1,36 @@
+# Linux Privilege Escalation Lab
+# Attacker + vulnerable targets on a shared bridge network.
+# Grow this file one target at a time as you add attack types.
+
+services:
+  attacker:
+    build: ./attacker
+    container_name: attacker
+    hostname: attacker
+    networks: [labnet]
+    tty: true
+    stdin_open: true
+    cap_add:
+      - NET_RAW        # let nmap do raw-packet scans
+      - NET_ADMIN
+
+  target-cron:
+    build: ./targets/cron
+    container_name: target-cron
+    hostname: target-cron
+    networks: [labnet]
+    # cron-based privesc needs the cron daemon running -> see entrypoint.sh
+
+  target-suid:
+    build: ./targets/suid
+    container_name: target-suid
+    hostname: target-suid
+    networks: [labnet]
+    # CHAPTER 01 "Set & Forget" -- five SUID paths to root:
+    #   A GTFOBins find | B GTFOBins python | C PATH hijack
+    #   D command injection | E shared-object (writable RPATH dir)
+    # Goal: read /root/flag.txt
+
+networks:
+  labnet:
+    driver: bridge
