@@ -1,0 +1,27 @@
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Claude Code local (machine-specific) settings — never commit to a public repo.
+# A shared .claude/settings.json (if you add one) is NOT ignored.
+.claude/settings.local.json
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local notes & scratch (keep your real engagement notes out of the public repo)
+scratch/
+notes.local.md
+*.local.md
+
+# Build artifacts / tool downloads that shouldn't be committed
+attacker/tools/
+*.log
+
+# Compiled binaries (the Dockerfiles build these inside the image)
+*.o
+*.out
+a.out

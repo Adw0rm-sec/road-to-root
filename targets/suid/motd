@@ -1,0 +1,12 @@
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  ROAD TO ROOT   //   BlackReef Security   //   CONFIDENTIAL      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOST    : hollow-fileproc-01  (file-processing jump box)        ║
+  ║  ACCESS  : foothold as 'labuser1' (standard user)                ║
+  ║  MISSION : escalate to root, then read  /root/flag.txt           ║
+  ║  INTEL   : this box has a SUID problem. More than one, in fact.  ║
+  ║                                                                  ║
+  ║  Full briefing:  cat ~/MISSION.txt                               ║
+  ╚══════════════════════════════════════════════════════════════════╝
+
