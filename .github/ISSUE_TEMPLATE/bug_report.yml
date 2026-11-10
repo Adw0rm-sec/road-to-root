@@ -1,0 +1,50 @@
+name: "Bug report"
+description: "A lab doesn't build, or an exploit path doesn't reach root as documented."
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping keep the range working. Please remember these boxes are
+        **intentionally vulnerable** — "the target is exploitable" is not a bug. 🙂
+  - type: dropdown
+    id: lab
+    attributes:
+      label: Which lab?
+      options:
+        - "Chapter 01 — SUID (target-suid)"
+        - "Chapter 02 — cron (target-cron)"
+        - "Attacker box"
+        - "Repo tooling / docs / CI"
+        - "Other"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect instead?
+      placeholder: "Station C didn't give a root shell; logstats ran my du but id still showed labuser1."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands you ran.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Host OS, architecture, and Docker version.
+      placeholder: "macOS 15 (arm64), Docker 29.9.2"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output / logs
+      render: shell

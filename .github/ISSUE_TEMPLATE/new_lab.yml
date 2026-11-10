@@ -1,0 +1,36 @@
+name: "New lab / technique"
+description: "Propose a new privilege-escalation vector to add as a chapter."
+labels: ["new-lab"]
+body:
+  - type: input
+    id: vector
+    attributes:
+      label: Technique / root cause
+      placeholder: "sudo NOPASSWD on a GTFOBins binary"
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How would the lab work?
+      description: The planted misconfiguration and the path(s) from labuser1 to root.
+    validations:
+      required: true
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Difficulty
+      options: ["★ easy", "★★ medium", "★★★ hard", "★★★★ expert"]
+    validations:
+      required: true
+  - type: textarea
+    id: refs
+    attributes:
+      label: References
+      description: GTFOBins entry, CVE, HackTricks page, write-ups, etc.
+  - type: checkboxes
+    id: docker
+    attributes:
+      label: Feasibility
+      options:
+        - label: "This works in a container (doesn't need its own kernel)"

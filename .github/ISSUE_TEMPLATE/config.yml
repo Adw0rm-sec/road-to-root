@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "New here? Start with the campaign"
+    url: https://github.com/Adw0rm-sec/road-to-root#the-story
+    about: "How the range works and how to get your first root."
+  - name: "Security & responsible use"
+    url: https://github.com/Adw0rm-sec/road-to-root/blob/main/SECURITY.md
+    about: "These labs are intentionally vulnerable — read before reporting."

@@ -1,5 +1,14 @@
 # Road to Root — Linux Privilege Escalation Labs
 
+<p align="center">
+  <a href="https://github.com/Adw0rm-sec/road-to-root/actions/workflows/ci.yml"><img src="https://github.com/Adw0rm-sec/road-to-root/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/platform-Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/focus-Linux%20privesc-444?logo=linux&logoColor=white" alt="Linux privesc">
+  <img src="https://img.shields.io/badge/labs-1%20live%20%C2%B7%207%20planned-success" alt="Labs: 1 live, 7 planned">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
+</p>
+
 > A hands-on, story-driven Linux privilege-escalation range you run on your own
 > machine with Docker. You get a low-privilege foothold on a box; your job is to
 > become **root**. Every lab is a real misconfiguration you'll meet in the wild,
