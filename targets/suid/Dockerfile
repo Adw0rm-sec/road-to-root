@@ -5,7 +5,7 @@
 #  Theme: SUID privilege escalation -- FIVE independent paths to root in one box.
 #  Foothold: labuser1 / password123   Goal: read /root/flag.txt
 # ============================================================================
-FROM ubuntu:24.04
+FROM ubuntu:25.10
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         openssh-server \
