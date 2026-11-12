@@ -7,7 +7,7 @@
 #  once a minute. You plant, you wait <=60 seconds, root does your bidding.
 #  Foothold: labuser1 / password123   Goal: read /root/flag.txt
 # ============================================================================
-FROM ubuntu:24.04
+FROM ubuntu:25.10
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         openssh-server \
