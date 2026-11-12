@@ -1,0 +1,43 @@
+================================================================
+ ROAD TO ROOT — Chapter 02: "The 60-Second Window"
+ Host: hollow-backup-01          Classification: CONFIDENTIAL
+================================================================
+
+OPERATOR,
+
+You've got a foothold as 'labuser1' on Hollow Industries' nightly
+backup server. This box runs itself: scheduled jobs tidy logs, archive
+data and ship backups around the clock. Nobody logs in here for weeks
+at a time — which is exactly why nobody noticed the permissions rot.
+
+Intel says root's scheduled tasks (cron) lean on scripts, configs and
+directories that the standard users can write to. A cron job runs as
+whoever OWNS the schedule — here, root. If you can change what one of
+those jobs does, you change what ROOT does. On the next tick.
+
+OBJECTIVE
+  - Escalate from labuser1 to root.
+  - Capture the flag:  /root/flag.txt   (only root can read it)
+
+THERE IS MORE THAN ONE WAY IN
+  We counted FIVE independent cron paths to root on this box. You only
+  need one to win — but a good operator maps them all. Each teaches a
+  different flavour of the same lesson: root trusting a writable thing.
+
+FIRST MOVE
+  See what runs on a schedule, and as whom:
+      cat /etc/crontab /etc/cron.d/* 2>/dev/null
+      ls -la /etc/cron.d
+  Then, for every file or directory those jobs touch, ask:
+      "Can I write this? If so, root runs my code on the next tick."
+
+PATIENCE IS THE TOOL
+  cron here fires every minute. Plant your payload, then wait up to 60
+  seconds. If it hasn't fired, check the clock and your permissions.
+
+The real debrief — every path, plus how the blue team detects and fixes
+each — is in  targets/cron/WRITEUP.md  once you've had a proper go.
+
+Good hunting.
+— BlackReef Command
+================================================================

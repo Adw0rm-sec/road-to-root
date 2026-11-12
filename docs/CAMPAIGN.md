@@ -51,10 +51,15 @@ they shouldn't. Five independent SUID paths, one flag. **This is where you learn
 to spot the `-rws` bit and never look at a file listing the same way again.**
 
 ### Chapter 02 — "The 60-Second Window" · `hollow-backup-01` (`target-cron`)
-*(draft)* A root cron job runs a world-writable backup script every minute. Patience
-and one `echo` away from root.
+The nightly backup box runs itself — scheduled jobs tidy logs, archive data and
+ship backups around the clock while nobody logs in for weeks. Over the years the
+automation grew to depend on scripts, configs, directories, a cron `$PATH` and a
+`tar *` that labuser1 can all write to — so every tick, root is one plant away
+from running your code. Five independent cron paths, one flag. **This is where
+you learn that a scheduled job is root's code on a timer: find the writable
+thing it trusts.**
 
-### Chapters 03–08
+### Chapters 03–08 — *planned*
 Planned. See the roster in the main [README](../README.md). Each lands only after
 it's been built and verified locally.
 

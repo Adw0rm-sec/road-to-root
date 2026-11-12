@@ -19,7 +19,12 @@ services:
     container_name: target-cron
     hostname: target-cron
     networks: [labnet]
-    # cron-based privesc needs the cron daemon running -> see entrypoint.sh
+    # CHAPTER 02 "The 60-Second Window" -- five cron paths to root:
+    #   A world-writable cron script | B writable sourced config
+    #   C writable drop directory    | D PATH hijack in cron
+    #   E wildcard (tar) injection
+    # Goal: read /root/flag.txt. cron fires every minute; the daemon is
+    # started by entrypoint.sh (without it, none of the paths can ever fire).
 
   target-suid:
     build: ./targets/suid

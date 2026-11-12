@@ -45,3 +45,27 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  cron-lab:
+    name: Cron lab — five paths to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the cron target
+        run: docker compose build target-cron
+
+      - name: Start the cron target
+        run: docker compose up -d target-cron
+
+      - name: Arm all five cron stations, wait for cron, assert root + flag
+        # Jobs fire every minute, so give the test up to ~3 min for all 5 ticks.
+        timeout-minutes: 5
+        run: |
+          docker cp tests/verify_cron.sh target-cron:/tmp/verify_cron.sh
+          docker exec target-cron chmod 755 /tmp/verify_cron.sh
+          docker exec -u labuser1 target-cron bash /tmp/verify_cron.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

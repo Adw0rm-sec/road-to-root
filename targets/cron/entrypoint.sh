@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-# Start the cron daemon (without this, the cron privesc can never fire)
-service cron start
+# Cron MUST be running or none of the privesc paths can ever fire.
+service cron start || cron
 
 # Run sshd in the foreground so the container stays alive.
 # -e logs to stderr so `docker logs target-cron` shows auth attempts.

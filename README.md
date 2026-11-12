@@ -5,7 +5,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/focus-Linux%20privesc-444?logo=linux&logoColor=white" alt="Linux privesc">
-  <img src="https://img.shields.io/badge/labs-1%20live%20%C2%B7%207%20planned-success" alt="Labs: 1 live, 7 planned">
+  <img src="https://img.shields.io/badge/labs-2%20live%20%C2%B7%206%20planned-success" alt="Labs: 2 live, 6 planned">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
 </p>
 
@@ -45,7 +45,7 @@ campaign lore and the chapter roster live in **[docs/CAMPAIGN.md](docs/CAMPAIGN.
 | # | Chapter | Host (codename) | Root cause | Difficulty | Status |
 |---|---------|-----------------|-----------|:----------:|:------:|
 | 01 | **SUID Bits** | `target-suid` (hollow-fileproc-01) | Misused SUID binaries | ★☆☆☆ → ★★★☆ | ✅ Ready |
-| 02 | Cron Jobs | `target-cron` (hollow-backup-01) | World-writable root cron | ★★☆☆ | 🧪 Draft |
+| 02 | **Cron Jobs** | `target-cron` (hollow-backup-01) | Root's timers trust the wrong things | ★☆☆☆ → ★★★☆ | ✅ Ready |
 | 03 | Sudo rules | — | Dangerous `sudoers` entries | ★★☆☆ | ⏳ Planned |
 | 04 | PATH & env | — | Untrusted `$PATH` in root context | ★★☆☆ | ⏳ Planned |
 | 05 | Capabilities | — | `cap_setuid` on a binary | ★★★☆ | ⏳ Planned |
@@ -54,7 +54,7 @@ campaign lore and the chapter roster live in **[docs/CAMPAIGN.md](docs/CAMPAIGN.
 | 08 | Docker socket | — | `/var/run/docker.sock` exposed | ★★★☆ | ⏳ Planned |
 
 > We grow this one chapter at a time: build the box → test it locally → confirm
-> it works as intended → publish. SUID is live; the rest land as they're verified.
+> it works as intended → publish. Two chapters live; the rest land as they're verified.
 
 ---
 
@@ -71,7 +71,9 @@ road-to-root/
 │   ├── suid/               # CHAPTER 01 — SUID bits (ready)
 │   │   ├── README.md       #   mission brief  (try it yourself)
 │   │   └── WRITEUP.md      #   full walkthrough (spoilers)
-│   └── cron/               # CHAPTER 02 — cron (draft)
+│   └── cron/               # CHAPTER 02 — cron jobs (ready)
+│       ├── README.md       #   mission brief
+│       └── WRITEUP.md      #   full walkthrough
 └── docs/
     ├── CAMPAIGN.md         # the story + roster
     └── LAB_TEMPLATE.md     # the template every lab follows
