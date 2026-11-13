@@ -1,0 +1,47 @@
+================================================================
+ ROAD TO ROOT — Chapter 03: "The Trusted Shortcut"
+ Host: hollow-dmz-01             Classification: CONFIDENTIAL
+================================================================
+
+OPERATOR,
+
+You've got a foothold as 'labuser1' on Hollow Industries' DMZ
+host. This box runs their admin workflows: a nightly backup, a
+contact-list service, a healthcheck tool, and a handful of log
+files the ops team reads over sudo.
+
+Intel says the admins used 'sudo' to delegate root power for
+"small" tasks — let each engineer run the backup, let ops cat a
+log, let the health team invoke a diagnostic. Each grant lives
+in /etc/sudoers.d/. Each grant was meant to be safe. Each one
+isn't.
+
+OBJECTIVE
+  - Escalate from labuser1 to root.
+  - Capture the flag:  /root/flag.txt   (only root can read it)
+
+THERE IS MORE THAN ONE WAY IN
+  We counted FIVE independent sudo paths to root on this box.
+  You only need one to win — but a good operator maps them all.
+  Each teaches a different flavour of the same lesson: sudo
+  delegates power, and the power leaks anywhere the command (or
+  its argv, its environment, or the files it touches) can reach.
+
+FIRST MOVE
+  Ask sudo itself what it will let you do:
+      sudo -l
+  Then, for every listed command, ask:
+      - Is it on GTFOBins with a 'Sudo' entry?
+      - Is the script it runs WRITABLE by me?
+      - Does any Defaults env_keep line preserve a dangerous var?
+      - Is there a wildcard in the command spec?
+      - Does the script interpolate my argv into a shell?
+  Each 'yes' is a way in.
+
+The real debrief — every path, plus how the blue team detects and
+fixes each — is in  targets/sudo/WRITEUP.md  once you've had a
+proper go.
+
+Good hunting.
+— BlackReef Command
+================================================================

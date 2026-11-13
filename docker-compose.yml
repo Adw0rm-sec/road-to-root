@@ -36,6 +36,19 @@ services:
     #   D command injection | E shared-object (writable RPATH dir)
     # Goal: read /root/flag.txt
 
+  target-sudo:
+    build: ./targets/sudo
+    container_name: target-sudo
+    hostname: target-sudo
+    networks: [labnet]
+    # CHAPTER 03 "The Trusted Shortcut" -- five sudo paths to root:
+    #   A NOPASSWD on GTFOBins binary (find)
+    #   B NOPASSWD on world-writable script
+    #   C env_keep preserves LD_PRELOAD
+    #   D sudoers wildcard + symlink
+    #   E eval injection in sudo'd script
+    # Goal: read /root/flag.txt
+
 networks:
   labnet:
     driver: bridge

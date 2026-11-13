@@ -69,3 +69,25 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  sudo-lab:
+    name: Sudo lab — five paths to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the sudo target
+        run: docker compose build target-sudo
+
+      - name: Start the sudo target
+        run: docker compose up -d target-sudo
+
+      - name: Exploit all five sudo stations and assert root + flag
+        run: |
+          docker cp tests/verify_sudo.sh target-sudo:/tmp/verify_sudo.sh
+          docker exec target-sudo chmod 755 /tmp/verify_sudo.sh
+          docker exec -u labuser1 target-sudo bash /tmp/verify_sudo.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

@@ -59,7 +59,17 @@ from running your code. Five independent cron paths, one flag. **This is where
 you learn that a scheduled job is root's code on a timer: find the writable
 thing it trusts.**
 
-### Chapters 03–08 — *planned*
+### Chapter 03 — "The Trusted Shortcut" · `hollow-dmz-01` (`target-sudo`)
+The DMZ host handles admin workflows — a nightly backup, a contact-list
+service, a healthcheck tool, a few log files ops read over sudo. Over time the
+team used `sudo` to delegate "small" bits of root power: let each engineer run
+the backup, let ops cat a log, let the health team invoke a diagnostic. Every
+grant was meant to be safe. None of them were. Five independent sudo paths, one
+flag. **This is where you learn that every grant of sudo is an implicit grant
+of everything the command — or its arguments, environment, or symlinks — can
+reach.**
+
+### Chapters 04–08 — *planned*
 Planned. See the roster in the main [README](../README.md). Each lands only after
 it's been built and verified locally.
 
