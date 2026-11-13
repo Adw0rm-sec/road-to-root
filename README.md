@@ -61,6 +61,45 @@ campaign lore and the chapter roster live in **[docs/CAMPAIGN.md](docs/CAMPAIGN.
 > We grow this one chapter at a time: build the box → test it locally → confirm
 > it works as intended → publish. Three chapters live; the rest land as they're verified.
 
+### What each live chapter teaches
+
+Every chapter is **one host**, **one class of flaw**, and **five independent root paths** inside it — so you can fail one and still win. The sub-stations:
+
+<details open>
+<summary><strong>Chapter 01 — SUID Bits</strong> · ★☆☆☆ → ★★★☆</summary>
+
+- **A · GTFOBins binary** — SUID copy of `find` → `-exec /bin/sh -p` runs an arbitrary command as root
+- **B · GTFOBins interpreter** — SUID copy of `python3` → write your own Python; `os.setuid(0); os.system("/bin/bash")`
+- **C · PATH hijack** — custom SUID binary calls `du` by bare name; plant a fake `du` early on `$PATH`
+- **D · Command injection** — custom SUID binary pastes `argv[1]` into a shell; `"x; /bin/bash -p"`
+- **E · Shared-object hijack** — custom SUID binary loads `libgreet.so` from a 0777 RPATH dir; replace the `.so` with your own constructor
+
+</details>
+
+<details open>
+<summary><strong>Chapter 02 — Cron Jobs</strong> · ★☆☆☆ → ★★★☆</summary>
+
+- **A · Writable cron script** — append to `/opt/maint/rotate.sh` (mode `0777`); root runs it every minute
+- **B · Writable sourced config** — a locked root script `source`s `/etc/rtr/backup.conf` (mode `0666`); `source` executes the file
+- **C · Writable drop directory** — root runs every `*.sh` in `/opt/jobs/` (mode `0777`); drop a new script
+- **D · Cron PATH hijack** — `/etc/cron.d/rtr-health` sets `PATH=/opt/maint/bin:…` with a writable first entry; shim `df`
+- **E · Tar wildcard injection** — root's `tar czf … *` inside `/opt/data/` (mode `0777`); `touch -- '--checkpoint-action=exec=sh pwn.sh'`
+
+</details>
+
+<details open>
+<summary><strong>Chapter 03 — Sudo Rules</strong> · ★☆☆☆ → ★★★☆</summary>
+
+- **A · NOPASSWD on a GTFOBins binary** — `sudo /usr/bin/find . -maxdepth 0 -exec /bin/bash \;`
+- **B · NOPASSWD on a world-writable script** — `/opt/admin/backup.sh` is mode `0777`; overwrite then `sudo`-run it
+- **C · `env_keep += "LD_PRELOAD"`** — sudo forwards `LD_PRELOAD`; load a `.so` whose constructor fires as root
+- **D · sudoers wildcard + symlink** — `sudo cat /var/log/app/*.log` + `ln -s /root/flag.txt /var/log/app/pwn.log`
+- **E · `eval` injection in a sudo'd script** — `/opt/admin/add-contact.sh` `eval`s its `argv`; `sudo … 'bob; /bin/bash'`
+
+</details>
+
+Deeper per-station walkthroughs (mission brief, recon, exploit flag-by-flag, mechanic, pitfalls, blue-team detect + fix) live in the [**Road to Root Wiki**](https://github.com/Adw0rm-sec/road-to-root/wiki).
+
 ---
 
 ## How the range is built
