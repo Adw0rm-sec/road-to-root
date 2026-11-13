@@ -6,6 +6,7 @@
   <img src="https://img.shields.io/badge/platform-Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/focus-Linux%20privesc-444?logo=linux&logoColor=white" alt="Linux privesc">
   <img src="https://img.shields.io/badge/labs-2%20live%20%C2%B7%206%20planned-success" alt="Labs: 2 live, 6 planned">
+  <a href="https://github.com/Adw0rm-sec/road-to-root/wiki"><img src="https://img.shields.io/badge/docs-wiki-blue" alt="Wiki"></a>
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
 </p>
 
@@ -37,6 +38,10 @@ Standing orders for every host in the campaign:
 
 Each chapter is one compromised host with a different **root cause**. Full
 campaign lore and the chapter roster live in **[docs/CAMPAIGN.md](docs/CAMPAIGN.md)**.
+
+> 📖 **Deep walkthroughs for every station** — mission brief, recon, exploit
+> flag-by-flag, mechanic, pitfalls, blue-team detect + fix — live in the
+> [**Road to Root Wiki**](https://github.com/Adw0rm-sec/road-to-root/wiki).
 
 ---
 
