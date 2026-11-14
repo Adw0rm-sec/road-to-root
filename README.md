@@ -75,7 +75,7 @@ cat /etc/crontab /etc/cron.d/* 2>/dev/null         # Chapter 02 surface
 sudo -l                                            # Chapter 03 surface
 ```
 
-Stuck? The chapter READMEs have hints with increasing detail; the [wiki](https://github.com/Adw0rm-sec/road-to-root/wiki) has the full debrief per station.
+Stuck? The chapter READMEs have hints with increasing detail; the [wiki](https://github.com/Adw0rm-sec/road-to-root/wiki) has the full debrief per station. The six questions below are what those commands are asking, and which lab a hit opens.
 
 ---
 
@@ -91,6 +91,99 @@ Stuck? The chapter READMEs have hints with increasing detail; the [wiki](https:/
 ---
 
 ## 🗺️ What you'll learn
+
+You SSH in as `labuser1` (uid 1001). You are not root. Ask these six questions in order. The first lead is a lab you exploit yourself. Red boxes on the map are those labs. Click one and the walkthrough opens.
+
+**1. Will root run a program for me, with no password?** Run `sudo -l`. A hit looks like `(ALL) NOPASSWD:` and a path. That path is the lab: [find](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-A-GTFOBins-sudo-find), [a script you can edit](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-B-Writable-Sudo-Script), [LD_PRELOAD](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-C-LD_PRELOAD-env_keep) (write the `.c` file, then `gcc`, then sudo), [a `*` in the path](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-D-Sudo-Wildcard-Symlink), or [a script that evals your file](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-E-Eval-Injection). The `*` lab gives you a root file, not a shell.
+
+**2. Does a program become root just because I ran it?** Run `find / -perm -u=s -type f 2>/dev/null`. The `-perm -u=s` flag means the setuid bit is on: the file runs as its owner, and owner `root` means that program is root while it runs. `2>/dev/null` only hides "Permission denied". Skip the normal Ubuntu set (`sudo`, `su`, `passwd`, `mount`, and the rest). An `s` in `-rwsr-xr-x` on anything else is the lab: [find](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-A-GTFOBins-find), [python](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-B-GTFOBins-python), [it calls `du` with no folder](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-C-PATH-Hijack), [it pastes your argument into a shell](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-D-Command-Injection), or [it loads a library from a folder you can write](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-E-Shared-Object-Hijack).
+
+**3. Does root run a file on a clock?** Run `ls -la /etc/crontab /etc/cron.d /etc/cron.daily /etc/cron.hourly` and `systemctl list-timers --all`. Cron is root's clock. Open the file the job names: [a script you can edit](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-A-Writable-Cron-Script), [a config that script reads](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-B-Writable-Sourced-Config), [a folder root runs every file in](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-C-Writable-Drop-Dir), [a command with no folder, such as `df`](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-D-Cron-PATH-Hijack), or [`tar` with a `*`](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-E-Tar-Wildcard-Injection).
+
+**4. Can I change a file or folder root will trust?** Run `echo "$PATH"`. Folders are searched left to right. A folder you can write, listed before `/usr/bin`, is the PATH lab you already saw: C01-C when a setuid program calls `du`, C02-D when cron calls `df`.
+
+**5. Who am I, and did someone leave a password or a key?** Run `id`, `cat ~/.bash_history`, `ls -la ~/.ssh`, and `env`. `uid=1001` is labuser1. A password in history is not root. `su` to that user, run `sudo -l` again, and you are back at question 1.
+
+**6. What kernel is this?** Run `uname -a`. Write the version down. These containers share the machine's kernel, so a kernel exploit is not a lab here.
+
+```mermaid
+flowchart LR
+    START["<b>You're in</b><br/>labuser1, uid 1001<br/>not root"]
+
+    subgraph gSudo["1. sudo -l"]
+        direction TB
+        SudoQ["<b>Will root run a program<br/>for me with no password?</b>"]
+        C03A["<b>C03-A · find</b><br/>The rule names find"]
+        C03B["<b>C03-B · script you can edit</b><br/>sudo runs that file as root"]
+        C03C["<b>C03-C · LD_PRELOAD</b><br/>Write the .c, then gcc"]
+        C03D["<b>C03-D · star in the path</b><br/>cat reads a root file"]
+        C03E["<b>C03-E · eval</b><br/>the script runs your file"]
+        SudoQ --> C03A
+        SudoQ --> C03B
+        SudoQ --> C03C
+        SudoQ --> C03D
+        SudoQ --> C03E
+    end
+
+    subgraph gSuid["2. setuid"]
+        direction TB
+        SuidQ["<b>Does this program become root<br/>just because I ran it?</b>"]
+        C01A["<b>C01-A · find</b>"]
+        C01B["<b>C01-B · python</b>"]
+        C01C["<b>C01-C · PATH</b><br/>It calls du. Your du runs"]
+        C01D["<b>C01-D · your argument</b><br/>pasted into a shell"]
+        C01E["<b>C01-E · library</b><br/>a .so you can replace"]
+        SuidQ --> C01A
+        SuidQ --> C01B
+        SuidQ --> C01C
+        SuidQ --> C01D
+        SuidQ --> C01E
+    end
+
+    subgraph gCron["3. cron and timers"]
+        direction TB
+        CronQ["<b>Does root run a file<br/>on a clock?</b>"]
+        C02A["<b>C02-A · script you can edit</b>"]
+        C02B["<b>C02-B · config it reads</b>"]
+        C02C["<b>C02-C · drop folder</b>"]
+        C02D["<b>C02-D · PATH</b><br/>The job calls df. Your df runs"]
+        C02E["<b>C02-E · tar star</b>"]
+        CronQ --> C02A
+        CronQ --> C02B
+        CronQ --> C02C
+        CronQ --> C02D
+        CronQ --> C02E
+    end
+
+    START --> SudoQ
+    START --> SuidQ
+    START --> CronQ
+
+    click C03A "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-A-GTFOBins-sudo-find" "Open C03-A" _blank
+    click C03B "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-B-Writable-Sudo-Script" "Open C03-B" _blank
+    click C03C "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-C-LD_PRELOAD-env_keep" "Open C03-C" _blank
+    click C03D "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-D-Sudo-Wildcard-Symlink" "Open C03-D" _blank
+    click C03E "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-E-Eval-Injection" "Open C03-E" _blank
+    click C01A "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-A-GTFOBins-find" "Open C01-A" _blank
+    click C01B "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-B-GTFOBins-python" "Open C01-B" _blank
+    click C01C "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-C-PATH-Hijack" "Open C01-C" _blank
+    click C01D "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-D-Command-Injection" "Open C01-D" _blank
+    click C01E "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-E-Shared-Object-Hijack" "Open C01-E" _blank
+    click C02A "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-A-Writable-Cron-Script" "Open C02-A" _blank
+    click C02B "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-B-Writable-Sourced-Config" "Open C02-B" _blank
+    click C02C "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-C-Writable-Drop-Dir" "Open C02-C" _blank
+    click C02D "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-D-Cron-PATH-Hijack" "Open C02-D" _blank
+    click C02E "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-E-Tar-Wildcard-Injection" "Open C02-E" _blank
+
+    classDef startNode fill:#2c3e50,stroke:#34495e,stroke-width:3px,color:#ffffff
+    classDef qNode fill:#2980b9,stroke:#3498db,stroke-width:3px,color:#ffffff
+    classDef labNode fill:#c0392b,stroke:#e74c3c,stroke-width:3px,color:#ffffff
+    class START startNode
+    class SudoQ,SuidQ,CronQ qNode
+    class C03A,C03B,C03C,C03D,C03E,C01A,C01B,C01C,C01D,C01E,C02A,C02B,C02C,C02D,C02E labNode
+```
+
+Every red box ends at `/root/flag.txt`. The station list under the roster is the same 15 paths, with the file each one trusts.
 
 ### Campaign roster
 
