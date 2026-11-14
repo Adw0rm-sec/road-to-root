@@ -1,0 +1,39 @@
+================================================================
+ ROAD TO ROOT — Chapter 04: "PATH Hijacking"
+ Host: hollow-ops-01             Classification: CONFIDENTIAL
+================================================================
+
+OPERATOR,
+
+You've got a foothold as 'labuser1' on Hollow Industries' ops host.
+Root tools on this box do not contain your code. They call a
+command by its short name — df, uname — and trust $PATH to find it.
+
+Two of the five ways this happens you have already done:
+  A  a setuid program calls du          (Chapter 01, Station C)
+  B  a cron job calls df                (Chapter 02, Station D)
+This host plants the other three.
+
+OBJECTIVE
+  - Escalate from labuser1 to root.
+  - Capture the flag:  /root/flag.txt   (only root can read it)
+
+THERE IS MORE THAN ONE WAY IN
+  Three independent PATH paths are planted here. You only need one
+  to win. A good operator maps all three.
+
+FIRST MOVE
+  echo "$PATH"
+  sudo -l
+  ls -ld /opt/admin/bin /opt/svc/bin
+  ls -l /etc/environment /etc/systemd/system/rtr-disk.service
+  For every root program, ask: which command does it call with no
+  slash, and is a folder I can write searched before /usr/bin?
+
+The clock on stations D and E ticks about every 20 seconds.
+The real debrief is in targets/path/WRITEUP.md after you have
+had a proper go.
+
+Good hunting.
+— BlackReef Command
+================================================================

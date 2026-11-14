@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>Hands-on Linux privilege-escalation labs in Docker — where you <em>actually</em> get root.</strong><br/>
-  <sub>3 chapters live · 15 independent root paths · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
+  <sub>4 chapters live · 15 earlier paths plus 3 new PATH labs · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
 </p>
 
 <p align="center">
@@ -10,8 +10,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/focus-Linux%20privesc-444?logo=linux&logoColor=white" alt="Linux privesc">
-  <img src="https://img.shields.io/badge/labs-3%20live%20%C2%B7%205%20planned-success" alt="Labs: 3 live, 5 planned">
-  <img src="https://img.shields.io/badge/stations-15%20verified-success" alt="15 stations verified">
+  <img src="https://img.shields.io/badge/labs-4%20live%20%C2%B7%204%20planned-success" alt="Labs: 4 live, 4 planned">
+  <img src="https://img.shields.io/badge/stations-18%20paths-success" alt="18 paths">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
 </p>
 
@@ -100,7 +100,7 @@ You SSH in as `labuser1` (uid 1001). You are not root. Ask these six questions i
 
 **3. Does root run a file on a clock?** Run `ls -la /etc/crontab /etc/cron.d /etc/cron.daily /etc/cron.hourly` and `systemctl list-timers --all`. Cron is root's clock. Open the file the job names: [a script you can edit](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-A-Writable-Cron-Script), [a config that script reads](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-B-Writable-Sourced-Config), [a folder root runs every file in](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-C-Writable-Drop-Dir), [a command with no folder, such as `df`](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-D-Cron-PATH-Hijack), or [`tar` with a `*`](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-E-Tar-Wildcard-Injection).
 
-**4. Can I change a file or folder root will trust?** Run `echo "$PATH"`. Folders are searched left to right. A folder you can write, listed before `/usr/bin`, is the PATH lab you already saw: C01-C when a setuid program calls `du`, C02-D when cron calls `df`.
+**4. Can I change a file or folder root will trust?** Run `echo "$PATH"`. Folders are searched left to right. A folder you can write, listed before `/usr/bin`, is a PATH hijack: C01-C when a setuid program calls `du`, C02-D when cron calls `df`. Chapter 04 on `target-path` adds the other three triggers: a sudo script that sets its own `PATH`, a service unit whose `PATH` lists a writable directory, and a writable `/etc/environment`.
 
 **5. Who am I, and did someone leave a password or a key?** Run `id`, `cat ~/.bash_history`, `ls -la ~/.ssh`, and `env`. `uid=1001` is labuser1. A password in history is not root. `su` to that user, run `sudo -l` again, and you are back at question 1.
 
@@ -192,13 +192,13 @@ Every red box ends at `/root/flag.txt`. The station list under the roster is the
 | 01 | **SUID Bits** | `target-suid` (`hollow-fileproc-01`) | Misused SUID binaries | ★☆☆☆ → ★★★☆ | ✅ Ready |
 | 02 | **Cron Jobs** | `target-cron` (`hollow-backup-01`) | Root's timers trust the wrong things | ★☆☆☆ → ★★★☆ | ✅ Ready |
 | 03 | **Sudo Rules** | `target-sudo` (`hollow-dmz-01`) | Dangerous `sudoers` entries | ★☆☆☆ → ★★★☆ | ✅ Ready |
-| 04 | PATH & env | — | Untrusted `$PATH` in root context | ★★☆☆ | ⏳ Planned |
+| 04 | **PATH Hijacking** | `target-path` (`hollow-ops-01`) | Root calls a command by name, and a writable directory is searched first | ★★☆☆ | ✅ Ready |
 | 05 | Capabilities | — | `cap_setuid` on a binary | ★★★☆ | ⏳ Planned |
 | 06 | Writable `/etc/passwd` | — | Weak file permissions | ★☆☆☆ | ⏳ Planned |
 | 07 | NFS `no_root_squash` | — | Exported share mounts as root | ★★★☆ | ⏳ Planned |
 | 08 | Docker socket | — | `/var/run/docker.sock` exposed | ★★★☆ | ⏳ Planned |
 
-### The 15 sub-stations in the three live chapters
+### The paths in the four live chapters
 
 <details open>
 <summary><strong>Chapter 01 — SUID Bits</strong>  ·  5 paths  ·  ★☆☆☆ → ★★★☆</summary>
@@ -233,6 +233,17 @@ Every red box ends at `/root/flag.txt`. The station list under the roster is the
 
 </details>
 
+<details open>
+<summary><strong>Chapter 04 — PATH Hijacking</strong>  ·  5 paths  ·  ★★☆☆</summary>
+
+- **A · SUID trigger** — already on `target-suid`, Chapter 01 Station C. `logstats` calls `du` by name
+- **B · Cron trigger** — already on `target-cron`, Chapter 02 Station D. The job calls `df`, and a writable directory is first on that job's `PATH`
+- **C · Sudo wrapper** — `/opt/admin/disk-check.sh` is not writable. It sets `PATH` so `/opt/admin/bin` is first, then calls `df`
+- **D · Service PATH** — `rtr-disk.service` sets `PATH=/opt/svc/bin:...`. A root loop runs that unit every 20 seconds. Docker does not boot systemd; the loop is the clock
+- **E · `/etc/environment`** — the file is mode `0666`. A root job sources it, then calls `uname`
+
+</details>
+
 Every one of these has a dedicated wiki page with the exploit flag-by-flag, the mechanic, the pitfalls, and the blue-team fix:
 
 → **[Open the wiki →](https://github.com/Adw0rm-sec/road-to-root/wiki)**
@@ -245,6 +256,7 @@ Every one of these has a dedicated wiki page with the exploit flag-by-flag, the 
 make up                 # Chapter 01 (SUID)   attacker + target-suid
 make up-cron            # Chapter 02 (Cron)   attacker + target-cron
 make up-sudo            # Chapter 03 (Sudo)   attacker + target-sudo
+make up-path            # Chapter 04 (PATH)   attacker + target-path
 
 make attacker           # shell into the attacker box (all chapters)
 make shell-<chapter>    # root shell on the target (inspect / reset)

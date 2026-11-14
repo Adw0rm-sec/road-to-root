@@ -36,6 +36,18 @@ services:
     #   D command injection | E shared-object (writable RPATH dir)
     # Goal: read /root/flag.txt
 
+  target-path:
+    build: ./targets/path
+    container_name: target-path
+    hostname: target-path
+    networks: [labnet]
+    # CHAPTER 04 "PATH Hijacking" -- three new paths on this host:
+    #   C sudo wrapper sets PATH then calls df
+    #   D service PATH, run every 20s by rtr-unit-runner
+    #   E writable /etc/environment sourced before uname
+    # Stations A and B are the existing SUID and cron PATH labs.
+    # Goal: read /root/flag.txt
+
   target-sudo:
     build: ./targets/sudo
     container_name: target-sudo

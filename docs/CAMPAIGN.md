@@ -69,7 +69,17 @@ flag. **This is where you learn that every grant of sudo is an implicit grant
 of everything the command — or its arguments, environment, or symlinks — can
 reach.**
 
-### Chapters 04–08 — *planned*
+### Chapter 04 — "PATH Hijacking" · `hollow-ops-01` (`target-path`)
+The ops host does not run your script. It calls `df` and `uname` by name and
+trusts the directory searched first. Two triggers already live on earlier
+hosts: a setuid program (Chapter 01 Station C) and a cron job (Chapter 02
+Station D). This host plants the other three: a sudo wrapper that sets its
+own `PATH`, a service unit whose `PATH` lists a writable directory, and a
+world-writable `/etc/environment` that a root job sources. **This is where
+you learn that a short command name is a search, and the first hit runs as
+whoever called it.**
+
+### Chapters 05–08 — *planned*
 Planned. See the roster in the main [README](../README.md). Each lands only after
 it's been built and verified locally.
 

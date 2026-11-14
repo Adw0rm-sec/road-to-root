@@ -1,0 +1,7 @@
+[Unit]
+Description=Hollow disk status
+[Service]
+Environment=PATH=/opt/svc/bin:/usr/bin:/bin
+ExecStart=/opt/svc/disk-status.sh
+[Install]
+WantedBy=multi-user.target

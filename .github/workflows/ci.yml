@@ -91,3 +91,26 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  path-lab:
+    name: PATH lab — three paths to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the PATH target
+        run: docker compose build target-path
+
+      - name: Start the PATH target
+        run: docker compose up -d target-path
+
+      - name: Exploit the three PATH stations and assert root + flag
+        timeout-minutes: 3
+        run: |
+          docker cp tests/verify_path.sh target-path:/tmp/verify_path.sh
+          docker exec target-path chmod 755 /tmp/verify_path.sh
+          docker exec -u labuser1 target-path bash /tmp/verify_path.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

@@ -1,0 +1,16 @@
+#!/bin/bash
+# Docker does not boot systemd, so this loop is the clock.
+# Every 20 seconds it does the two things the unit and the login job describe:
+#   1. Read Environment=PATH from the unit, then run that unit's script.
+#   2. Run the job that sources /etc/environment.
+# A failure in one tick must not stop the next tick.
+mkdir -p /var/log/rtr
+while true; do
+  unit=/etc/systemd/system/rtr-disk.service
+  unit_path=$(sed -n 's/^Environment=PATH=//p' "$unit" | head -n 1)
+  if [ -n "$unit_path" ]; then
+    PATH="$unit_path" /opt/svc/disk-status.sh >>/var/log/rtr/unit.log 2>&1 || true
+  fi
+  /opt/maint/env-report.sh >>/var/log/rtr/env.log 2>&1 || true
+  sleep 20
+done
