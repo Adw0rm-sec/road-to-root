@@ -79,6 +79,20 @@ world-writable `/etc/environment` that a root job sources. **This is where
 you learn that a short command name is a search, and the first hit runs as
 whoever called it.**
 
+### Chapter 09 — "Foothold" · `hollow-portal-01` (`target-web`)
+The one chapter that starts you *outside*. Every other host hands you
+`labuser1`; this one hands you nothing but a URL. Hollow Industries exposed an
+internal file-sharing and support portal — "Hollow Share", Apache + PHP — to
+the perimeter, and it is riddled with the web bugs that turn a browser into a
+shell. Six independent routes to code execution — unrestricted upload, an
+"images only" uploader you can bypass, OS command injection, LFI that becomes
+RCE, server-side template injection, and PHP object deserialization — each
+landing a reverse shell as `www-data`. Then one clean climb: the web user may
+`sudo php`, so `sudo php -r 'system("/bin/sh")'` is root. **This is where you
+learn how the breach in every other chapter's "assume breach" actually
+happens — and that a reverse shell is just the beginning, not the end.** Two
+flags: `/var/www/flag.txt` marks the foothold, `/root/flag.txt` marks root.
+
 ### Chapters 05–08 — *planned*
 Planned. See the roster in the main [README](../README.md). Each lands only after
 it's been built and verified locally.

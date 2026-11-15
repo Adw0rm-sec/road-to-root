@@ -1,0 +1,16 @@
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  ROAD TO ROOT   //   BlackReef Security   //   CONFIDENTIAL      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOST    : hollow-portal-01   (public "Hollow Share" web portal) ║
+  ║  ACCESS  : none — this is the PERIMETER. You start as an         ║
+  ║            external attacker with only a browser.                ║
+  ║  MISSION : get code execution on the web app, land a reverse     ║
+  ║            shell as www-data, then escalate to root.             ║
+  ║  FLAGS   : /var/www/flag.txt  (www-data — the foothold flag)     ║
+  ║            /root/flag.txt     (root — the final flag)            ║
+  ║                                                                  ║
+  ║  The app is at  http://127.0.0.1:8080/  on your host.           ║
+  ║  Point Burp at it. First move:  browse every feature.           ║
+  ╚══════════════════════════════════════════════════════════════════╝
+
