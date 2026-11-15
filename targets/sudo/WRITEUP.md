@@ -126,7 +126,7 @@ every GTFOBins sudo entry automatically.
 sudo -l
 # (ALL) NOPASSWD: /opt/admin/backup.sh
 ls -la /opt/admin/backup.sh
-# -rw-rw-rw- 1 root root ... /opt/admin/backup.sh    <-- 0666, world-writable!
+# -rwxrwxrwx 1 root root ... /opt/admin/backup.sh    <-- 0777, world-writable AND executable!
 cat /opt/admin/backup.sh
 # #!/bin/bash
 # /usr/bin/tar czf /opt/backups/logs.tgz /var/log 2>/dev/null
@@ -134,7 +134,7 @@ cat /opt/admin/backup.sh
 
 ### 2. The flaw
 The **sudoers entry** is locked down (0440 root-owned under
-`/etc/sudoers.d/`). The **script it runs** is `0666` — world-writable.
+`/etc/sudoers.d/`). The **script it runs** is `0777` — world-writable and executable.
 Sudo checks "can labuser1 run `/opt/admin/backup.sh`?" The script is
 whatever's in the file at exec time.
 

