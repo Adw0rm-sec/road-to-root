@@ -45,7 +45,7 @@ RUN printf 'labuser1 ALL=(ALL) NOPASSWD: /usr/bin/find\n' \
 # THE MISTAKE: find's -exec lets any caller run anything -- see GTFOBins.
 
 # --- Station B -- NOPASSWD on a world-writable script ----------------------
-#   The "backup" script looks root-owned; its mode (0666) says otherwise.
+#   The "backup" script looks root-owned; its mode (0777 — world-writable AND executable) says otherwise.
 #   Anyone can edit what sudo then runs as root.
 #   exploit: overwrite /opt/admin/backup.sh, then sudo /opt/admin/backup.sh
 RUN printf '#!/bin/bash\n# daily log backup -- runs as root via sudo\n/usr/bin/tar czf /opt/backups/logs.tgz /var/log 2>/dev/null\necho "backup complete"\n' \
@@ -56,7 +56,7 @@ RUN printf 'labuser1 ALL=(ALL) NOPASSWD: /opt/admin/backup.sh\n' \
          > /etc/sudoers.d/rtr-b-script \
     && chmod 0440 /etc/sudoers.d/rtr-b-script \
     && chown root:root /etc/sudoers.d/rtr-b-script
-# THE MISTAKE: a world-writable (0666) script granted to sudo. Sudo's own
+# THE MISTAKE: a world-writable, executable (0777) script granted to sudo. Sudo's own
 #              perms are perfect; the script's aren't.
 
 # --- Station C -- env_keep preserves LD_PRELOAD ----------------------------
