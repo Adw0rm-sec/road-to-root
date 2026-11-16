@@ -61,6 +61,25 @@ services:
     #   E eval injection in sudo'd script
     # Goal: read /root/flag.txt
 
+  target-web:
+    build: ./targets/web
+    container_name: target-web
+    hostname: target-web
+    networks: [labnet]
+    # Map the app to the host so the learner exploits from their own browser +
+    # Burp. Bound to loopback only -- never expose this box off the machine.
+    # Default host port 8080; override if it clashes (e.g. Burp's own 8080):
+    #   HOLLOW_PORT=8081 make up-web
+    ports:
+      - "127.0.0.1:${HOLLOW_PORT:-8080}:80"
+    # CHAPTER 09 "Foothold" -- a vulnerable web app ("Hollow Share") with SIX
+    # routes to code execution, each landing a reverse shell as www-data:
+    #   A unrestricted file upload        D LFI -> RCE (log poison / wrappers)
+    #   B upload filter bypass            E SSTI (Twig)
+    #   C OS command injection            F PHP insecure deserialization
+    # Then www-data -> root via `sudo php`.  Foothold: /var/www/flag.txt
+    # Goal: read /root/flag.txt. Reverse shells call back to the attacker box.
+
 networks:
   labnet:
     driver: bridge

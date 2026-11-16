@@ -1,0 +1,7 @@
+{
+    "name": "hollow/share",
+    "description": "Hollow Share internal portal (intentionally vulnerable lab app)",
+    "require": {
+        "twig/twig": "^3.10"
+    }
+}

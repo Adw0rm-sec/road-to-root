@@ -114,3 +114,27 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  web-lab:
+    name: Web lab — six RCE routes + reverse shell to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the attacker + web target
+        run: docker compose build attacker target-web
+
+      - name: Start the attacker + web target
+        run: docker compose up -d attacker target-web
+
+      - name: Exploit all six web routes, land a reverse shell, assert root + flag
+        # Six curl-driven RCEs + one real /dev/tcp reverse shell to the attacker.
+        timeout-minutes: 5
+        run: |
+          docker cp tests/verify_web.sh attacker:/tmp/verify_web.sh
+          docker exec attacker chmod 755 /tmp/verify_web.sh
+          docker exec attacker bash /tmp/verify_web.sh target-web
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

