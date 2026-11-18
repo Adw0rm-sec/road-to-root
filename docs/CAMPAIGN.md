@@ -79,6 +79,39 @@ world-writable `/etc/environment` that a root job sources. **This is where
 you learn that a short command name is a search, and the first hit runs as
 whoever called it.**
 
+### Chapter 05 — "Capabilities" · `hollow-vault-01` (`target-caps`)
+The "hardened" host with every SUID bit stripped — and five binaries each
+carrying one file capability too many. A copy of python and of perl hold
+`cap_setuid` (become uid 0); a copy of `tar` holds `cap_dac_read_search` (read
+the flag with no shell at all); a custom writer holds `cap_dac_override` (append
+a rule to `/etc/sudoers`); a bespoke launcher holds `cap_setuid` and then runs a
+command you choose. **This is where you learn that `getcap -r /` is the new
+`find -perm -4000` — removing the bit doesn't remove the power.**
+
+### Chapter 06 — "Wildcard Expansion" · `hollow-archive-01` (`target-wild`)
+Root's housekeeping tars, rsyncs, chowns and chmods four working directories
+every minute, and every job ends in an unquoted `*`. A filename that looks like
+an option *is* an option: `tar` runs your `--checkpoint-action`, `rsync` runs
+your `-e` remote shell, and `chown`/`chmod` `--reference` flip a root-owned
+script in a sticky dir until it's yours. **This is where you learn the shell
+expands `*` before the program ever sees it.**
+
+### Chapter 07 — "Local Service + Port Forwarding" · `hollow-relay-01` (`target-pivot`)
+The win isn't on the shell you landed — it's a service bound to `127.0.0.1`.
+A password-less Redis runs there as root (reach it with `ssh -L`, make it write
+`/root/.ssh/authorized_keys`), and a root "updater" fetches a script from a
+loopback port (publish your own server there with `ssh -R`). **This is where you
+learn that loopback-only is not an access control, and the three SSH forwards
+(-L, -R, -D) dissolve it.**
+
+### Chapter 08 — "Docker socket" · `hollow-forge-01` (`target-docker`)
+The build host put `labuser1` in the `docker` group. The daemon runs as root, so
+`docker run -v /:/host … chroot /host` is root on the box — read the flag, drop a
+SUID bash, or do it all with `curl` straight to `/var/run/docker.sock`, no docker
+client needed. Runs its own inner daemon so the "host" is the container itself.
+**This is where you learn that `docker` group membership is root, and a mounted
+socket is a full takeover.**
+
 ### Chapter 09 — "Foothold" · `hollow-portal-01` (`target-web`)
 The one chapter that starts you *outside*. Every other host hands you
 `labuser1`; this one hands you nothing but a URL. Hollow Industries exposed an
@@ -92,10 +125,6 @@ landing a reverse shell as `www-data`. Then one clean climb: the web user may
 learn how the breach in every other chapter's "assume breach" actually
 happens — and that a reverse shell is just the beginning, not the end.** Two
 flags: `/var/www/flag.txt` marks the foothold, `/root/flag.txt` marks root.
-
-### Chapters 05–08 — *planned*
-Planned. See the roster in the main [README](../README.md). Each lands only after
-it's been built and verified locally.
 
 ---
 

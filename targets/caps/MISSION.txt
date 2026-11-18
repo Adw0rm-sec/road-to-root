@@ -1,0 +1,37 @@
+================================================================
+ ROAD TO ROOT — Chapter 05: "Capabilities"
+ Host: hollow-vault-01           Classification: CONFIDENTIAL
+================================================================
+
+OPERATOR,
+
+You have a foothold as 'labuser1' on Hollow Industries' vault host.
+There is not a single SUID bit on the tools that matter here —
+`find / -perm -4000` comes up empty-handed. Do not stop there.
+
+Linux can hand a program one slice of root's power without the
+SUID bit: a file capability. A binary with cap_setuid can become
+uid 0. One with cap_dac_override can write any file. One with
+cap_dac_read_search can read any file. Five binaries on this box
+carry one capability too many.
+
+OBJECTIVE
+  - Escalate from labuser1 to root (or just read the flag — one
+    station lets you do that without a shell at all).
+  - Capture the flag:  /root/flag.txt   (only root can read it)
+
+THERE IS MORE THAN ONE WAY IN
+  Five independent capability paths are planted here. You only need
+  one. A good operator maps all five and names the capability on each.
+
+FIRST MOVE
+  getcap -r / 2>/dev/null
+  For every hit, ask: what does THIS capability let the holder do,
+  and does the binary let me choose what it does with that power?
+
+The real debrief is in targets/caps/WRITEUP.md after you have had
+a proper go.
+
+Good hunting.
+— BlackReef Command
+================================================================

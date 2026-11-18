@@ -1,0 +1,12 @@
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  ROAD TO ROOT   //   BlackReef Security   //   CONFIDENTIAL      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOST    : hollow-relay-01   (internal services)                ║
+  ║  ACCESS  : foothold as 'labuser1' (standard user)                ║
+  ║  MISSION : escalate to root, then read  /root/flag.txt           ║
+  ║  INTEL   : the win is a loopback service. Tunnel to it.           ║
+  ║                                                                  ║
+  ║  First move:     ss -tlnp                                        ║
+  ║  Full briefing:  cat ~/MISSION.txt                               ║
+  ╚══════════════════════════════════════════════════════════════════╝

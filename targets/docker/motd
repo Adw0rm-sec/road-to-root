@@ -1,0 +1,12 @@
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  ROAD TO ROOT   //   BlackReef Security   //   CONFIDENTIAL      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOST    : hollow-forge-01   (build / CI host)                  ║
+  ║  ACCESS  : foothold as 'labuser1' (standard user)                ║
+  ║  MISSION : escalate to root, then read  /root/flag.txt           ║
+  ║  INTEL   : check your groups. The docker socket is root.         ║
+  ║                                                                  ║
+  ║  First move:     id ; ls -l /var/run/docker.sock                ║
+  ║  Full briefing:  cat ~/MISSION.txt                               ║
+  ╚══════════════════════════════════════════════════════════════════╝

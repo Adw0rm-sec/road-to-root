@@ -1,0 +1,12 @@
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  ROAD TO ROOT   //   BlackReef Security   //   CONFIDENTIAL      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOST    : hollow-archive-01   (backup / housekeeping)          ║
+  ║  ACCESS  : foothold as 'labuser1' (standard user)                ║
+  ║  MISSION : escalate to root, then read  /root/flag.txt           ║
+  ║  INTEL   : root's jobs end in `*`. A filename can be a flag.      ║
+  ║                                                                  ║
+  ║  First move:     cat /etc/cron.d/rtr-*                           ║
+  ║  Full briefing:  cat ~/MISSION.txt                               ║
+  ╚══════════════════════════════════════════════════════════════════╝

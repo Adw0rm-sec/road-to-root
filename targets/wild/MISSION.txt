@@ -1,0 +1,49 @@
+================================================================
+ ROAD TO ROOT — Chapter 06: "Wildcard Expansion"
+ Host: hollow-archive-01         Classification: CONFIDENTIAL
+================================================================
+
+OPERATOR,
+
+You have a foothold as 'labuser1' on Hollow Industries' archive host.
+Root's housekeeping jobs run every minute: they tar, rsync, chown
+and chmod the contents of a handful of working directories. Every
+one of those jobs ends in an unquoted  *  .
+
+Here is the whole trick. When root's script runs
+
+    tar czf backup.tar *
+
+the SHELL expands the  *  into the list of filenames BEFORE tar
+ever starts. If one of those filenames is
+
+    --checkpoint-action=exec=sh runme.sh
+
+then tar sees an OPTION, not a file. You control the filenames in
+those directories. So you control root's command line.
+
+OBJECTIVE
+  - Escalate from labuser1 to root.
+  - Capture the flag:  /root/flag.txt   (only root can read it)
+
+THERE IS MORE THAN ONE WAY IN
+  Four jobs, four tools, four injections: tar, rsync, chown, chmod.
+  You only need one. A good operator lands all four.
+
+FIRST MOVE
+  cat /etc/cron.d/rtr-*            # read every job's exact command
+  ls -ld /opt/archive /opt/sync /opt/pipeline /opt/conf
+  For each job: which tool, which flag turns a filename into an
+  instruction, and can I create a file with that name?
+
+A shell that a planted job spawns dies when the job ends. Copy bash
+out first:
+  cp /bin/bash /tmp/rb && chmod 6777 /tmp/rb   (then /tmp/rb -p)
+...or just have your payload run `cat /root/flag.txt > /tmp/flag`.
+
+Jobs tick every 60 seconds. The real debrief is in
+targets/wild/WRITEUP.md after you have had a proper go.
+
+Good hunting.
+— BlackReef Command
+================================================================

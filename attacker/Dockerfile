@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 \
         iputils-ping \
         sshpass \
+        redis-tools \
         git \
     && rm -rf /var/lib/apt/lists/*
 # ca-certificates is REQUIRED: with --no-install-recommends it isn't pulled in

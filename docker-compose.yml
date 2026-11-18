@@ -80,6 +80,57 @@ services:
     # Then www-data -> root via `sudo php`.  Foothold: /var/www/flag.txt
     # Goal: read /root/flag.txt. Reverse shells call back to the attacker box.
 
+  target-caps:
+    build: ./targets/caps
+    container_name: target-caps
+    hostname: target-caps
+    networks: [labnet]
+    # cap_dac_read_search is NOT in Docker's default set; Station C's capped
+    # `tar` binary needs it in the container bounding set to exec. The other
+    # four stations work without it.
+    cap_add:
+      - DAC_READ_SEARCH
+    # CHAPTER 05 "Capabilities" -- five file-capability paths to root:
+    #   A cap_setuid on python3 | B cap_setuid on perl
+    #   C cap_dac_read_search on tar (read the flag, no shell)
+    #   D cap_dac_override on a writer (-> sudoers) | E cap_setuid on svc-runner
+    # Goal: read /root/flag.txt.  getcap -r / is the surface.
+
+  target-wild:
+    build: ./targets/wild
+    container_name: target-wild
+    hostname: target-wild
+    networks: [labnet]
+    # CHAPTER 06 "Wildcard Expansion" -- four argument-injection paths to root,
+    # fired by root cron every minute:
+    #   A tar --checkpoint-action | B rsync -e remote shell
+    #   C chown --reference (sticky dir) | D chmod --reference (sticky dir)
+    # Goal: read /root/flag.txt. The shell expands * before the program runs.
+
+  target-pivot:
+    build: ./targets/pivot
+    container_name: target-pivot
+    hostname: target-pivot
+    networks: [labnet]
+    # CHAPTER 07 "Local Service + Port Forwarding" -- a loopback-only root
+    # Redis and a loopback root updater, reached by tunnelling:
+    #   A  ssh -L  -> Redis as root -> /root/.ssh/authorized_keys -> ssh root@
+    #   B  ssh -R  -> publish your server onto target:9000 -> root updater runs it
+    # Goal: read /root/flag.txt. The win is a service, not a file.
+
+  target-docker:
+    build: ./targets/docker
+    container_name: target-docker
+    hostname: target-docker
+    networks: [labnet]
+    # Runs its OWN Docker daemon (docker-in-docker) so the "host" you take over
+    # is this container. That needs a privileged container.
+    privileged: true
+    # CHAPTER 08 "Docker socket" -- the docker group is root, three ways:
+    #   A docker run -v /:/host chroot cat | B SUID bash persistence
+    #   C the raw /var/run/docker.sock HTTP API via curl
+    # Goal: read /root/flag.txt. The socket IS the privilege.
+
 networks:
   labnet:
     driver: bridge

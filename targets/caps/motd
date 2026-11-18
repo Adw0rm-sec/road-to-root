@@ -1,0 +1,12 @@
+
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  ROAD TO ROOT   //   BlackReef Security   //   CONFIDENTIAL      ║
+  ╠══════════════════════════════════════════════════════════════════╣
+  ║  HOST    : hollow-vault-01   (file capabilities)                 ║
+  ║  ACCESS  : foothold as 'labuser1' (standard user)                ║
+  ║  MISSION : escalate to root, then read  /root/flag.txt           ║
+  ║  INTEL   : no SUID bits here. Power hides in capabilities.        ║
+  ║                                                                  ║
+  ║  First move:     getcap -r / 2>/dev/null                         ║
+  ║  Full briefing:  cat ~/MISSION.txt                               ║
+  ╚══════════════════════════════════════════════════════════════════╝

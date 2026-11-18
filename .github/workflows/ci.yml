@@ -138,3 +138,98 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v
+
+  caps-lab:
+    name: Capabilities lab — five paths to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the capabilities target
+        run: docker compose build target-caps
+
+      - name: Start the capabilities target
+        run: docker compose up -d target-caps
+
+      - name: Exploit all five capability stations and assert root + flag
+        run: |
+          docker cp tests/verify_caps.sh target-caps:/tmp/verify_caps.sh
+          docker exec target-caps chmod 755 /tmp/verify_caps.sh
+          docker exec -u labuser1 target-caps bash /tmp/verify_caps.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  wild-lab:
+    name: Wildcard lab — four paths to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the wildcard target
+        run: docker compose build target-wild
+
+      - name: Start the wildcard target
+        run: docker compose up -d target-wild
+
+      - name: Arm all four wildcard stations, wait for cron, assert root + flag
+        # tar/rsync fire on one tick; chown/chmod need two (flip, then execute).
+        timeout-minutes: 7
+        run: |
+          docker cp tests/verify_wild.sh target-wild:/tmp/verify_wild.sh
+          docker exec target-wild chmod 755 /tmp/verify_wild.sh
+          docker exec -u labuser1 target-wild bash /tmp/verify_wild.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  pivot-lab:
+    name: Pivot lab — local + remote port forwarding to root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the attacker + pivot target
+        run: docker compose build attacker target-pivot
+
+      - name: Start the attacker + pivot target
+        run: docker compose up -d attacker target-pivot
+
+      - name: Tunnel to the loopback services (-L and -R) and assert root + flag
+        # -L to root Redis -> authorized_keys; -R publishing a payload to the
+        # root updater. The -R path waits on a cron tick.
+        timeout-minutes: 5
+        run: |
+          docker cp tests/verify_pivot.sh attacker:/tmp/verify_pivot.sh
+          docker exec attacker chmod 755 /tmp/verify_pivot.sh
+          docker exec attacker bash /tmp/verify_pivot.sh target-pivot
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  docker-lab:
+    name: Docker-socket lab — docker group is root, three ways
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the docker-socket target
+        run: docker compose build target-docker
+
+      - name: Start the docker-socket target (privileged dind)
+        run: docker compose up -d target-docker
+
+      - name: Exploit the socket three ways and assert root + flag
+        # Inner dockerd needs a few seconds; the self-test waits for it.
+        timeout-minutes: 5
+        run: |
+          docker cp tests/verify_docker.sh target-docker:/tmp/verify_docker.sh
+          docker exec target-docker chmod 755 /tmp/verify_docker.sh
+          docker exec -u labuser1 target-docker bash /tmp/verify_docker.sh
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
