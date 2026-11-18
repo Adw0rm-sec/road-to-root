@@ -1,6 +1,6 @@
 # Attacker box. Ubuntu + common offensive tooling (arm64-native on Apple Silicon).
 # Swap the FROM line for kalilinux/kali-rolling if you want the full Kali toolset.
-FROM ubuntu:24.04
+FROM ubuntu:25.10
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
