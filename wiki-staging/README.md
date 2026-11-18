@@ -23,7 +23,7 @@ the same lean, exploit-first 6-section template the existing station pages use.
 
 **Chapter 07 — Local Service + Port Forwarding** (`chapter-07/`)
 - `Chapter-07-Overview.md`
-- `C07-Station-A-local-forward-redis.md`
+- `C07-Station-A-local-forward-webapp.md`
 - `C07-Station-B-remote-forward-updater.md`
 
 **Chapter 08 — Docker socket** (`chapter-08/`)

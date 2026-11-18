@@ -112,9 +112,9 @@ services:
     container_name: target-pivot
     hostname: target-pivot
     networks: [labnet]
-    # CHAPTER 07 "Local Service + Port Forwarding" -- a loopback-only root
-    # Redis and a loopback root updater, reached by tunnelling:
-    #   A  ssh -L  -> Redis as root -> /root/.ssh/authorized_keys -> ssh root@
+    # CHAPTER 07 "Local Service + Port Forwarding" -- two loopback-only root
+    # services reached by tunnelling, both ending in RCE as root:
+    #   A  ssh -L  -> internal web app on :8080, command injection -> RCE as root
     #   B  ssh -R  -> publish your server onto target:9000 -> root updater runs it
     # Goal: read /root/flag.txt. The win is a service, not a file.
 

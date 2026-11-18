@@ -98,10 +98,11 @@ expands `*` before the program ever sees it.**
 
 ### Chapter 07 — "Local Service + Port Forwarding" · `hollow-relay-01` (`target-pivot`)
 The win isn't on the shell you landed — it's a service bound to `127.0.0.1`.
-A password-less Redis runs there as root (reach it with `ssh -L`, make it write
-`/root/.ssh/authorized_keys`), and a root "updater" fetches a script from a
-loopback port (publish your own server there with `ssh -R`). **This is where you
-learn that loopback-only is not an access control, and the three SSH forwards
+An internal diagnostics web app runs there as root with a command-injection bug
+(reach it with `ssh -L`, inject in `/ping?host=` for RCE as root), and a root
+"updater" fetches a script from a loopback port (publish your own server there
+with `ssh -R`). Both end in code execution as root. **This is where you learn
+that loopback-only is not an access control, and the three SSH forwards
 (-L, -R, -D) dissolve it.**
 
 ### Chapter 08 — "Docker socket" · `hollow-forge-01` (`target-docker`)

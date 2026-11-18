@@ -38,10 +38,10 @@ loopback by default — exactly where the updater looks.
 
 ## 4. Pitfalls
 
-- **Why not have Redis write the cron directly?** Modern Debian cron rejects an
-  entire `/etc/cron.d` file if any line fails to parse, and the RDB header is an
-  unparseable line — `authorized_keys` tolerates garbage, cron doesn't. That
-  asymmetry is why Station B uses `-R` instead.
+- **Why `-R` and not another `-L`?** Station A pulled a service *to* you. This
+  bug is the target reaching *out* to its own loopback — you can't satisfy it by
+  connecting in, so you publish your listener onto the target with `-R`.
+  Recognising which direction a situation needs is the whole skill.
 - Keep the HTTP server and the `-R` tunnel both up until the tick fires.
 
 ## 5. Detect & fix
@@ -54,4 +54,4 @@ loopback by default — exactly where the updater looks.
 - `-R` is the mirror of `-L`: push your service onto the target's loopback.
 - Not every sink tolerates RDB framing — pick the primitive that fits.
 
-> Next chapter: [[Chapter-08-Overview]] · Related: [[C07-Station-A-local-forward-redis]]
+> Next chapter: [[Chapter-08-Overview]] · Related: [[C07-Station-A-local-forward-webapp]]

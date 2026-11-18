@@ -165,9 +165,9 @@ Root's cron jobs end in an unquoted `*`; a filename becomes an option.
 <details open>
 <summary><strong>Chapter 07 — Local Service + Port Forwarding</strong>  ·  2 paths  ·  ★★★☆</summary>
 
-The win is a loopback-only root service; tunnel to it.
+The win is a loopback-only root service; tunnel to it, then exploit it for RCE.
 
-- **A · local forward (`-L`)** — `ssh -L 6379:127.0.0.1:6379` to a root Redis → write `/root/.ssh/authorized_keys` → `ssh root@`
+- **A · local forward (`-L`)** — `ssh -L 8080:127.0.0.1:8080` to an internal root web app; command injection in `/ping?host=` → RCE as root
 - **B · remote forward (`-R`)** — a root updater fetches `http://127.0.0.1:9000/`; `ssh -R` publishes your payload server there → root runs it
 
 </details>

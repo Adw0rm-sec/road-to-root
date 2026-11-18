@@ -3,19 +3,22 @@
 #  Host codename: hollow-relay-01   (compose service: target-pivot)
 #
 #  Theme: the privesc isn't ON the shell you landed -- it's a service bound to
-#  127.0.0.1 that you can only reach by TUNNELLING to it. Redis is listening on
-#  loopback, running as ROOT, with no password. From the attacker box you can't
-#  touch it directly; forward a port through your SSH session and now you can.
-#  Then Redis-as-root writes any file: an SSH key into /root, or a root cron.
+#  127.0.0.1 that you can only reach by TUNNELLING to it. Two internal services,
+#  two forwarding directions, both ending in code execution AS ROOT:
+#    A  an internal "diagnostics" web app on 127.0.0.1:8080 with a command-
+#       injection bug, running as root -> reach it with a LOCAL forward (-L).
+#    B  a root "updater" cron that fetches http://127.0.0.1:9000/payload.sh ->
+#       publish YOUR server onto the target's loopback with a REMOTE forward (-R).
 #  Foothold: labuser1 / password123   Goal: read /root/flag.txt
 # ============================================================================
 FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         openssh-server openssh-client \
-        redis-server \
+        python3 \
         cron \
         curl \
+        iputils-ping \
         procps findutils coreutils iproute2 net-tools \
         less nano vim-tiny \
     && rm -rf /var/lib/apt/lists/*
@@ -24,31 +27,17 @@ RUN useradd -m -s /bin/bash labuser1 \
     && echo 'labuser1:password123' | chpasswd
 
 # === PLANTED "INTERNAL SERVICE" VULNERABILITIES ============================
-# Two loopback-only services, two forwarding directions:
-#   A  Redis as root on 127.0.0.1:6379 -> reach it with a LOCAL forward (-L),
-#      make it write /root/.ssh/authorized_keys, ssh in as root.
-#   B  a root "auto-updater" cron that fetches http://127.0.0.1:9000/payload.sh
-#      -> nothing listens there; publish YOUR server onto the target's loopback
-#      with a REMOTE forward (-R) and it runs your script as root.
+# Two loopback-only services, two forwarding directions. Both give RCE as root.
 
-# --- Station A -- Redis, no auth, running as root --------------------------
-# Root's .ssh must exist for the authorized_keys write.
-RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
-# Redis listens on 127.0.0.1 only; protected-mode off so a forwarded client
-# (which arrives AS 127.0.0.1) can issue CONFIG/SET/SAVE. Started as root by the
-# entrypoint -- that is the real mistake.
-# enable-protected-configs: Redis 7.0 (2022) made `dir`/`dbfilename` protected,
-# so CONFIG SET can't repoint the save file at runtime unless this is turned on.
-# Legacy deploys (and plenty of older Redis in the wild) allow it by default --
-# this lab opts in so you can practise the classic write primitive. The debrief
-# explains the modern mitigation.
-RUN printf 'bind 127.0.0.1\nport 6379\nprotected-mode no\ndaemonize no\ndir /var/lib/redis\nenable-protected-configs yes\nrdbcompression no\n' \
-      > /etc/redis/redis-lab.conf \
-    && mkdir -p /var/lib/redis
-# Let root log in with the key Station A drops. Key only, no password.
-RUN sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-# THE MISTAKE (A): a password-less Redis, bound to loopback, running as root.
-#                  "Loopback-only" is defeated by an SSH local forward.
+# --- Station A -- internal diagnostics web app, command injection, runs as root
+#   Bound to 127.0.0.1:8080. /ping?host= splices host into a shell command.
+#   Reach it with `ssh -L 8080:127.0.0.1:8080` and inject -> RCE as root.
+RUN mkdir -p /opt/intranet
+COPY src/intranet.py /opt/intranet/intranet.py
+RUN chmod 0755 /opt/intranet/intranet.py \
+    && chown root:root /opt/intranet/intranet.py
+# THE MISTAKE (A): a root web service on loopback that shells out with
+#                  unsanitised input -- "loopback-only" is defeated by -L.
 
 # --- Station B -- a root updater that trusts a loopback URL -----------------
 # Every minute root fetches and runs a script from http://127.0.0.1:9000/.

